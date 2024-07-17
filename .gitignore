@@ -1,0 +1,9 @@
+# Don't commit direnv cache
+.direnv
+
+# Don't commit nix build output
+result
+
+# Don't commit zig caches
+.zig-cache
+zig-out/**
