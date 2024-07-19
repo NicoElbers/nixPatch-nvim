@@ -120,7 +120,7 @@ fn findPluginUrl(self: Self, plugins: []Plugin) ![]Plugin {
         switch (state) {
             .findPname => {
                 var split = utils.split(line);
-                if (!utils.eql("pname", split.first()))
+                if (!utils.eql("pname", utils.trim(split.first())))
                     continue :outer;
 
                 const pname = utils.trim(split.next().?);
@@ -136,7 +136,7 @@ fn findPluginUrl(self: Self, plugins: []Plugin) ![]Plugin {
 
             .verifyVersion => |plugin| {
                 var split = utils.split(line);
-                const first = split.first();
+                const first = utils.trim(split.first());
 
                 assert(!utils.eql("pname", first));
                 if (!utils.eql("version", first))
@@ -152,7 +152,7 @@ fn findPluginUrl(self: Self, plugins: []Plugin) ![]Plugin {
 
             .getUrl => |plugin| {
                 var split = utils.split(line);
-                const first = split.first();
+                const first = utils.trim(split.first());
 
                 assert(!utils.eql("pname", first));
                 if (!utils.eql("src", first))
@@ -167,11 +167,11 @@ fn findPluginUrl(self: Self, plugins: []Plugin) ![]Plugin {
 
                     var ownerLine = utils.split(line_spliterator.next().?);
                     assert(utils.eql("owner", ownerLine.first()));
-                    const owner = ownerLine.next().?;
+                    const owner = utils.trim(ownerLine.next().?);
 
                     var repoLine = utils.split(line_spliterator.next().?);
                     assert(utils.eql("repo", repoLine.first()));
-                    const repo = repoLine.next().?;
+                    const repo = utils.trim(repoLine.next().?);
 
                     plugin.url = try std.fmt.allocPrint(
                         self.alloc,
@@ -183,7 +183,7 @@ fn findPluginUrl(self: Self, plugins: []Plugin) ![]Plugin {
 
                     var urlLine = utils.split(line_spliterator.next().?);
                     assert(utils.eql("url", urlLine.first()));
-                    const url = urlLine.next().?;
+                    const url = utils.trim(urlLine.next().?);
 
                     plugin.url = try self.alloc.dupe(u8, url);
                 } else unreachable;
@@ -193,13 +193,13 @@ fn findPluginUrl(self: Self, plugins: []Plugin) ![]Plugin {
 
             .verifyUrl => |plugin| {
                 var split = utils.split(line);
-                const first = split.first();
+                const first = utils.trim(split.first());
 
                 assert(!utils.eql("pname", first));
                 if (!utils.eql("meta.homepage", first))
                     continue :outer;
 
-                const url = split.next().?;
+                const url = utils.trim(split.next().?);
                 assert(utils.eql(url, plugin.url));
 
                 relevant_urls_found += 1;
