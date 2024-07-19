@@ -5,10 +5,15 @@ const InputParser = @import("parsers/InputParser.zig");
 const LuaParser = @import("parsers/LuaParser.zig");
 
 pub fn main() !void {
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
+    // var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    // defer arena.deinit();
 
-    const alloc = arena.allocator();
+    // const alloc = arena.allocator();
+
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+
+    const alloc = gpa.allocator();
 
     const args = try std.process.argsAlloc(alloc);
     defer std.process.argsFree(alloc, args);
@@ -39,7 +44,12 @@ pub fn main() !void {
     defer input_parser.deinit();
 
     const plugins = try input_parser.parseInput(input_blob);
-    _ = plugins;
+    defer {
+        for (plugins) |plugin| {
+            plugin.deinit(alloc);
+        }
+        alloc.free(plugins);
+    }
 
     var lua_parser = try LuaParser.init(alloc, in_path, out_path);
     defer lua_parser.deinit();
