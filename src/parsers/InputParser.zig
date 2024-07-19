@@ -144,8 +144,13 @@ fn findPluginUrl(self: Self, plugins: []Plugin) ![]Plugin {
 
                 const version = utils.trim(split.next().?);
 
-                // TODO: Is this always true?
-                assert(utils.eql(version, plugin.version));
+                // https://github.com/NixOS/nixpkgs/blob/493f07fef3bdc5c7dc09f642ce12b7777d294a71/pkgs/applications/editors/neovim/build-neovim-plugin.nix#L36
+                const nvimVersion = try std.fmt.allocPrint(self.alloc, "-unstable-{s}", .{version});
+                defer self.alloc.free(nvimVersion);
+
+                const nvimEql = std.mem.endsWith(u8, plugin.version, nvimVersion);
+                const vimEql = utils.eql(version, plugin.version);
+                assert(vimEql or nvimEql);
 
                 state = .{ .getUrl = plugin };
             },
