@@ -20,7 +20,7 @@ pub fn init(alloc: Allocator, vim_plugin_file: File) Self {
 }
 
 pub fn deinit(self: *Self) void {
-    _ = self;
+    self.vim_plugin_file.close();
 }
 
 pub fn parseInput(self: Self, input_blob: []const u8) ![]const Plugin {
