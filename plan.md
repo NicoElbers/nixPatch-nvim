@@ -18,10 +18,11 @@ store, replace the github links with the store links!
 Zig input will be:
 
 1. path to nixpkgs source
-2. outpath for config
-3. a string mixing plugin names (pname) with the associated version and path
+2. path to read config from
+3. outpath for config ouput
+4. a string mixing plugin names (pname) with the associated version and path
    in the manner `pname|version|path;pname|version|path;...`
-4. All other arguments are considered lua configuration to be put at the front of
+5. All other arguments are considered lua configuration to be put at the front of
    `init.lua`
 
 The program also assumes that the directory it's being ran in is the directory
