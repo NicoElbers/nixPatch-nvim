@@ -38,3 +38,15 @@ pub fn unMmapFile(mapped_file: []align(mem.page_size) u8) void {
 
     std.posix.munmap(mapped_file);
 }
+
+pub fn trim(input: []const u8) []const u8 {
+    return mem.trim(u8, input, " ;{}\"\n");
+}
+
+pub fn split(input: []const u8) mem.SplitIterator(u8, .sequence) {
+    return mem.splitSequence(u8, input, "=");
+}
+
+pub fn eql(expected: []const u8, input: []const u8) bool {
+    return mem.eql(u8, expected, trim(input));
+}
