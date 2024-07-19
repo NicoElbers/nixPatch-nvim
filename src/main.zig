@@ -75,11 +75,9 @@ fn getPlugins(alloc: Allocator, nixpkgs_path: []const u8, input_blob: []const u8
 
     std.log.debug("Attempting to open file {s}", .{full_path});
     const vim_plugins_file = try fs.openFileAbsolute(full_path, .{});
-    const vim_plugins_buf = try util.mmapFile(vim_plugins_file, .{});
-    defer util.unMmapFile(vim_plugins_buf);
 
     // Get plugins
-    var input_parser = InputParser.init(alloc, vim_plugins_buf);
+    var input_parser = InputParser.init(alloc, vim_plugins_file);
     defer input_parser.deinit();
 
     return try input_parser.parseInput(input_blob);

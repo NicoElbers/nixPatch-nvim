@@ -9,13 +9,13 @@ const Plugin = utils.Plugin;
 
 const Self = @This();
 
-vim_plugin_buf: []const u8,
+vim_plugin_file: File,
 alloc: Allocator,
 
-pub fn init(alloc: Allocator, vim_plugin_buf: []const u8) Self {
+pub fn init(alloc: Allocator, vim_plugin_file: File) Self {
     return Self{
         .alloc = alloc,
-        .vim_plugin_buf = vim_plugin_buf,
+        .vim_plugin_file = vim_plugin_file,
     };
 }
 
@@ -24,10 +24,24 @@ pub fn deinit(self: *Self) void {
 }
 
 pub fn parseInput(self: Self, input_blob: []const u8) ![]const Plugin {
-    var plugins = std.ArrayList(Plugin).init(self.alloc);
+    const half_plugins = try parseBlob(self.alloc, input_blob);
+
+    const vim_plugin_buf = try utils.mmapFile(self.vim_plugin_file, .{});
+    defer utils.unMmapFile(vim_plugin_buf);
+
+    const final_plugins = try findPluginUrl(
+        self.alloc,
+        vim_plugin_buf,
+        half_plugins,
+    );
+    return final_plugins;
+}
+
+fn parseBlob(alloc: Allocator, input_blob: []const u8) ![]Plugin {
+    var plugins = std.ArrayList(Plugin).init(alloc);
     errdefer {
         for (plugins.items) |plugin| {
-            plugin.deinit(self.alloc);
+            plugin.deinit(alloc);
         }
         plugins.deinit();
     }
@@ -44,19 +58,19 @@ pub fn parseInput(self: Self, input_blob: []const u8) ![]const Plugin {
         assert(plugin_spliterator.next() == null);
 
         try plugins.append(.{
-            .pname = try self.alloc.dupe(u8, pname),
-            .version = try self.alloc.dupe(u8, version),
-            .path = try self.alloc.dupe(u8, path),
+            .pname = try alloc.dupe(u8, pname),
+            .version = try alloc.dupe(u8, version),
+            .path = try alloc.dupe(u8, path),
             .tag = .UrlNotFound,
             .url = undefined,
         });
     }
 
     std.log.debug("Found {d} plugins", .{plugins.items.len});
-    return try findPluginUrl(self, try plugins.toOwnedSlice());
+    return try plugins.toOwnedSlice();
 }
 
-fn findPluginUrl(self: Self, plugins: []Plugin) ![]Plugin {
+fn findPluginUrl(alloc: Allocator, vim_plugin_buf: []const u8, plugins: []Plugin) ![]Plugin {
     const State = union(enum) {
         findPname,
         verifyVersion: *Plugin,
@@ -67,7 +81,7 @@ fn findPluginUrl(self: Self, plugins: []Plugin) ![]Plugin {
 
     var relevant_urls_found: u32 = 0;
 
-    var line_spliterator = std.mem.splitSequence(u8, self.vim_plugin_buf, "\n");
+    var line_spliterator = std.mem.splitSequence(u8, vim_plugin_buf, "\n");
     outer: while (line_spliterator.next()) |line| {
         switch (state) {
             .findPname => {
@@ -97,8 +111,8 @@ fn findPluginUrl(self: Self, plugins: []Plugin) ![]Plugin {
                 const version = utils.trim(split.next().?);
 
                 // https://github.com/NixOS/nixpkgs/blob/493f07fef3bdc5c7dc09f642ce12b7777d294a71/pkgs/applications/editors/neovim/build-neovim-plugin.nix#L36
-                const nvimVersion = try std.fmt.allocPrint(self.alloc, "-unstable-{s}", .{version});
-                defer self.alloc.free(nvimVersion);
+                const nvimVersion = try std.fmt.allocPrint(alloc, "-unstable-{s}", .{version});
+                defer alloc.free(nvimVersion);
 
                 const nvimEql = std.mem.endsWith(u8, plugin.version, nvimVersion);
                 const vimEql = utils.eql(version, plugin.version);
@@ -131,7 +145,7 @@ fn findPluginUrl(self: Self, plugins: []Plugin) ![]Plugin {
                     const repo = utils.trim(repoLine.next().?);
 
                     plugin.url = try std.fmt.allocPrint(
-                        self.alloc,
+                        alloc,
                         "https://github.com/{s}/{s}/",
                         .{ owner, repo },
                     );
@@ -142,7 +156,7 @@ fn findPluginUrl(self: Self, plugins: []Plugin) ![]Plugin {
                     assert(utils.eql("url", urlLine.first()));
                     const url = utils.trim(urlLine.next().?);
 
-                    plugin.url = try self.alloc.dupe(u8, url);
+                    plugin.url = try alloc.dupe(u8, url);
                 } else unreachable;
 
                 state = .{ .verifyUrl = plugin };
@@ -175,3 +189,4 @@ fn findPluginUrl(self: Self, plugins: []Plugin) ![]Plugin {
     assert(state == .findPname);
     return plugins;
 }
+
