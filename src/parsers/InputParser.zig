@@ -5,41 +5,12 @@ const utils = @import("../utils.zig");
 
 const Allocator = std.mem.Allocator;
 const File = std.fs.File;
+const Plugin = utils.Plugin;
 
 const Self = @This();
 
 generated_vim_plugin_file: File,
 alloc: Allocator,
-
-const Plugin = struct {
-    pname: []const u8,
-    version: []const u8,
-    path: []const u8,
-
-    tag: Tag,
-    url: []const u8,
-
-    const Tag = enum {
-        /// url field in undefined
-        UrlNotFound,
-
-        /// url field is github url
-        GithubUrl,
-
-        /// url field is non specific url
-        GitUrl,
-    };
-
-    pub fn deinit(self: Plugin, alloc: Allocator) void {
-        alloc.free(self.pname);
-        alloc.free(self.version);
-        alloc.free(self.path);
-
-        if (self.tag == .UrlNotFound) return;
-
-        alloc.free(self.url);
-    }
-};
 
 pub fn init(alloc: Allocator, nixpkgs_path: []const u8) !Self {
     assert(fs.path.isAbsolute(nixpkgs_path));

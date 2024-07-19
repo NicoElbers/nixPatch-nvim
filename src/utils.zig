@@ -6,6 +6,36 @@ const assert = std.debug.assert;
 const File = fs.File;
 const Allocator = mem.Allocator;
 
+pub const Plugin = struct {
+    pname: []const u8,
+    version: []const u8,
+    path: []const u8,
+
+    tag: Tag,
+    url: []const u8,
+
+    const Tag = enum {
+        /// url field in undefined
+        UrlNotFound,
+
+        /// url field is github url
+        GithubUrl,
+
+        /// url field is non specific url
+        GitUrl,
+    };
+
+    pub fn deinit(self: Plugin, alloc: Allocator) void {
+        alloc.free(self.pname);
+        alloc.free(self.version);
+        alloc.free(self.path);
+
+        if (self.tag == .UrlNotFound) return;
+
+        alloc.free(self.url);
+    }
+};
+
 const MmapConfig = struct {
     read: bool = true,
     write: bool = false,
