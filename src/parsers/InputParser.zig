@@ -9,34 +9,18 @@ const Plugin = utils.Plugin;
 
 const Self = @This();
 
-generated_vim_plugin_file: File,
+vim_plugin_buf: []const u8,
 alloc: Allocator,
 
-pub fn init(alloc: Allocator, nixpkgs_path: []const u8) !Self {
-    assert(fs.path.isAbsolute(nixpkgs_path));
-
-    const full_path = try fs.path.join(alloc, &.{
-        nixpkgs_path,
-        "pkgs",
-        "applications",
-        "editors",
-        "vim",
-        "plugins",
-        "generated.nix",
-    });
-    defer alloc.free(full_path);
-
-    std.log.debug("Attempting to open file {s}", .{full_path});
-    const file = try fs.openFileAbsolute(full_path, .{});
-
+pub fn init(alloc: Allocator, vim_plugin_buf: []const u8) Self {
     return Self{
         .alloc = alloc,
-        .generated_vim_plugin_file = file,
+        .vim_plugin_buf = vim_plugin_buf,
     };
 }
 
 pub fn deinit(self: *Self) void {
-    self.generated_vim_plugin_file.close();
+    _ = self;
 }
 
 pub fn parseInput(self: Self, input_blob: []const u8) ![]const Plugin {
@@ -73,11 +57,6 @@ pub fn parseInput(self: Self, input_blob: []const u8) ![]const Plugin {
 }
 
 fn findPluginUrl(self: Self, plugins: []Plugin) ![]Plugin {
-    const file_buf = try utils.mmapFile(self.generated_vim_plugin_file, .{});
-    defer utils.unMmapFile(file_buf);
-
-    var relevant_urls_found: u32 = 0;
-
     const State = union(enum) {
         findPname,
         verifyVersion: *Plugin,
@@ -86,7 +65,9 @@ fn findPluginUrl(self: Self, plugins: []Plugin) ![]Plugin {
     };
     var state: State = .findPname;
 
-    var line_spliterator = std.mem.splitSequence(u8, file_buf, "\n");
+    var relevant_urls_found: u32 = 0;
+
+    var line_spliterator = std.mem.splitSequence(u8, self.vim_plugin_buf, "\n");
     outer: while (line_spliterator.next()) |line| {
         switch (state) {
             .findPname => {
