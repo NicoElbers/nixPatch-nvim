@@ -63,8 +63,8 @@ stdenvNoCC.mkDerivation {
     echo "##################"
     echo "##################"
 
-    # Temporary workaround for the pacher not working
-    mkdir -p $out
-    cp -r ./* $out
+    # # Temporary workaround for the pacher not working
+    # mkdir -p $out
+    # cp -r ./* $out
   '';
 }
