@@ -1,3 +1,5 @@
+// FIXME: Think about the case where a user adds their own plugin to nixpkgs
+
 const std = @import("std");
 const InputParser = @import("parsers/InputParser.zig");
 const LuaParser = @import("parsers/LuaParser.zig");
@@ -9,7 +11,7 @@ pub fn main() !void {
     const alloc = arena.allocator();
 
     const args = try std.process.argsAlloc(alloc);
-    // Will get dealloced by arena
+    defer std.process.argsFree(alloc, args);
 
     if (args.len < 5) {
         std.log.err(
@@ -33,8 +35,11 @@ pub fn main() !void {
     const extra_args: ?[]const []const u8 = if (args.len > 5) args[5..] else null;
     _ = extra_args;
 
-    var input_parser = try InputParser.init(alloc, nixpkgs_path, input_blob);
+    var input_parser = try InputParser.init(alloc, nixpkgs_path);
     defer input_parser.deinit();
+
+    const plugins = try input_parser.parseInput(input_blob);
+    _ = plugins;
 
     var lua_parser = try LuaParser.init(alloc, in_path, out_path);
     defer lua_parser.deinit();
