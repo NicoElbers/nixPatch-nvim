@@ -36,6 +36,14 @@ pub const Plugin = struct {
     }
 };
 
+pub const Substitution = struct {
+    tag: Tag,
+    from: []const u8,
+    to: []const u8,
+
+    const Tag = enum { url, githubShort };
+};
+
 const MmapConfig = struct {
     read: bool = true,
     write: bool = false,
