@@ -33,8 +33,6 @@ stdenvNoCC.mkDerivation {
     cp config-patcher $out/bin
 
   '';
-      # TODO: Add this back later
-      # -Doptimize=ReleaseSafe \
 
   checkPhase = ''
     echo "Running zig tests"

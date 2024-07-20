@@ -35,10 +35,9 @@ let
   configPatcher = callPackage ./zigBuilder.nix { };
   configPatcherExe = lib.getExe configPatcher;
 
-  # TODO: heavily consider taking the url from pkg.meta.homepage instead of 
-  # parsing nixpkgs
   inputBlob = lib.escapeShellArgs [(builtins.concatStringsSep ";"
       (builtins.map (plugin: "${plugin.pname}|${plugin.version}|${plugin}") plugins))];
+
 in 
 stdenvNoCC.mkDerivation {
   name = "nvim-config-patched";
@@ -49,8 +48,6 @@ stdenvNoCC.mkDerivation {
   dontInstall = true;
 
   buildPhase = /* bash */ ''
-    ls -lah
-
     echo "Starting patcher"
     ${configPatcherExe} ${nixpkgsOutPath} $(pwd) $out ${inputBlob}
     echo "done with patcher"
