@@ -35,6 +35,8 @@ let
   configPatcher = callPackage ./zigBuilder.nix { };
   configPatcherExe = lib.getExe configPatcher;
 
+  # TODO: heavily consider taking the url from pkg.meta.homepage instead of 
+  # parsing nixpkgs
   inputBlob = lib.escapeShellArgs [(builtins.concatStringsSep ";"
       (builtins.map (plugin: "${plugin.pname}|${plugin.version}|${plugin}") plugins))];
 in 
@@ -62,9 +64,5 @@ stdenvNoCC.mkDerivation {
     echo "##################"
     echo "##################"
     echo "##################"
-
-    # # Temporary workaround for the pacher not working
-    # mkdir -p $out
-    # cp -r ./* $out
   '';
 }
