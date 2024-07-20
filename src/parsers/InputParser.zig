@@ -86,14 +86,14 @@ fn findPluginUrl(alloc: Allocator, vim_plugin_buf: []const u8, plugins: []Plugin
     outer: while (line_spliterator.next()) |line| {
         switch (state) {
             .findPname => {
-                var split = utils.split(line);
-                if (!utils.eql("pname", utils.trim(split.first())))
+                var split = splitOnEq(line);
+                if (!eql("pname", trim(split.first())))
                     continue :outer;
 
-                const pname = utils.trim(split.next().?);
+                const pname = trim(split.next().?);
 
                 inner: for (plugins) |*plugin| {
-                    if (!utils.eql(pname, plugin.pname))
+                    if (!eql(pname, plugin.pname))
                         continue :inner;
 
                     state = .{ .verifyVersion = plugin };
@@ -102,77 +102,78 @@ fn findPluginUrl(alloc: Allocator, vim_plugin_buf: []const u8, plugins: []Plugin
             },
 
             .verifyVersion => |plugin| {
-                var split = utils.split(line);
-                const first = utils.trim(split.first());
+                var split = splitOnEq(line);
+                const first = trim(split.first());
 
-                assert(!utils.eql("pname", first));
-                if (!utils.eql("version", first))
+                assert(!eql("pname", first));
+                if (!eql("version", first))
                     continue :outer;
 
-                const version = utils.trim(split.next().?);
+                const version = trim(split.next().?);
 
                 // https://github.com/NixOS/nixpkgs/blob/493f07fef3bdc5c7dc09f642ce12b7777d294a71/pkgs/applications/editors/neovim/build-neovim-plugin.nix#L36
                 const nvimVersion = try std.fmt.allocPrint(alloc, "-unstable-{s}", .{version});
                 defer alloc.free(nvimVersion);
 
                 const nvimEql = std.mem.endsWith(u8, plugin.version, nvimVersion);
-                const vimEql = utils.eql(version, plugin.version);
+                const vimEql = eql(version, plugin.version);
                 assert(vimEql or nvimEql);
 
                 state = .{ .getUrl = plugin };
             },
 
             .getUrl => |plugin| {
-                var split = utils.split(line);
-                const first = utils.trim(split.first());
+                var split = splitOnEq(line);
+                const first = trim(split.first());
 
-                assert(!utils.eql("pname", first));
-                if (!utils.eql("src", first))
+                assert(!eql("pname", first));
+                if (!eql("src", first))
                     continue :outer;
 
                 assert(plugin.tag == .UrlNotFound);
 
-                const fetch_method = utils.trim(split.next().?);
+                const fetch_method = trim(split.next().?);
 
-                if (utils.eql("fetchFromGitHub", fetch_method)) {
+                if (eql("fetchFromGitHub", fetch_method)) {
                     plugin.tag = .GithubUrl;
 
-                    var ownerLine = utils.split(line_spliterator.next().?);
-                    assert(utils.eql("owner", ownerLine.first()));
-                    const owner = utils.trim(ownerLine.next().?);
+                    var ownerLine = splitOnEq(line_spliterator.next().?);
+                    assert(eql("owner", ownerLine.first()));
+                    const owner = trim(ownerLine.next().?);
 
-                    var repoLine = utils.split(line_spliterator.next().?);
-                    assert(utils.eql("repo", repoLine.first()));
-                    const repo = utils.trim(repoLine.next().?);
+                    var repoLine = splitOnEq(line_spliterator.next().?);
+                    assert(eql("repo", repoLine.first()));
+                    const repo = trim(repoLine.next().?);
 
                     plugin.url = try std.fmt.allocPrint(
                         alloc,
-                        "https://github.com/{s}/{s}/",
+                        "https://github.com/{s}/{s}",
                         .{ owner, repo },
                     );
-                } else if (utils.eql("fetchgit", fetch_method)) {
+                } else if (eql("fetchgit", fetch_method)) {
                     plugin.tag = .GitUrl;
 
-                    var urlLine = utils.split(line_spliterator.next().?);
-                    assert(utils.eql("url", urlLine.first()));
-                    const url = utils.trim(urlLine.next().?);
+                    var urlLine = splitOnEq(line_spliterator.next().?);
+                    assert(eql("url", utils.trim(urlLine.first())));
+                    const url = trim(urlLine.next().?);
 
-                    plugin.url = try alloc.dupe(u8, url);
+                    plugin.url = try alloc.dupe(u8, trim(url));
                 } else unreachable;
 
                 state = .{ .verifyUrl = plugin };
             },
 
             .verifyUrl => |plugin| {
-                var split = utils.split(line);
-                const first = utils.trim(split.first());
+                var split = splitOnEq(line);
+                const first = trim(split.first());
 
-                assert(!utils.eql("pname", first));
-                if (!utils.eql("meta.homepage", first))
+                assert(!eql("pname", first));
+                if (!eql("meta.homepage", first))
                     continue :outer;
 
-                const url = utils.trim(split.next().?);
-                assert(utils.eql(url, plugin.url));
+                const url = trim(split.next().?);
+                std.debug.print("url: {s} : plug {s}\n", .{ url, plugin.url });
+                assert(eql(url, plugin.url));
 
                 relevant_urls_found += 1;
                 state = .findPname;
@@ -353,7 +354,7 @@ test findPluginUrl {
             .version = "2020-08-14",
             .path = "path",
             .tag = .GithubUrl,
-            .url = "https://github.com/euclidianAce/BetterLua.vim/",
+            .url = "https://github.com/euclidianAce/BetterLua.vim",
         },
         Plugin{
             .pname = "hare.vim",
@@ -367,11 +368,26 @@ test findPluginUrl {
             .version = "2024-05-19",
             .path = "path3",
             .tag = .GithubUrl,
-            .url = "https://github.com/j-hui/fidget.nvim/",
+            .url = "https://github.com/j-hui/fidget.nvim",
         },
     };
 
     for (0..3) |idx| {
         try eqlPlugin(output[idx], expected[idx]);
     }
+}
+
+// input parser utils
+const mem = std.mem;
+
+pub fn trim(input: []const u8) []const u8 {
+    return mem.trim(u8, input, " /\\;{}\"\n");
+}
+
+fn splitOnEq(input: []const u8) mem.SplitIterator(u8, .sequence) {
+    return mem.splitSequence(u8, input, "=");
+}
+
+fn eql(expected: []const u8, input: []const u8) bool {
+    return mem.eql(u8, expected, trim(input));
 }
