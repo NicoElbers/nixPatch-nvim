@@ -57,6 +57,8 @@ pub fn main() !void {
     // Create config
     var lua_parser = try LuaParser.init(alloc, in_path, out_path);
     defer lua_parser.deinit();
+
+    try lua_parser.createConfig(plugins);
 }
 
 fn getPlugins(alloc: Allocator, nixpkgs_path: []const u8, input_blob: []const u8) ![]const Plugin {
