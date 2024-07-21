@@ -39,6 +39,7 @@ pub const Plugin = struct {
 pub const Substitution = struct {
     from: []const u8,
     to: []const u8,
+    pname: []const u8,
 
     const Tag = enum { url, githubShort };
 
@@ -46,15 +47,18 @@ pub const Substitution = struct {
         alloc: Allocator,
         from: []const u8,
         to: []const u8,
+        pname: []const u8,
     ) !Substitution {
         return Substitution{
             .from = try std.fmt.allocPrint(alloc, "\"{s}\"", .{from}),
             .to = try std.fmt.allocPrint(alloc, "dir = \"{s}\"", .{to}),
+            .pname = try std.fmt.allocPrint(alloc, "name = \"{s}\"", .{pname}),
         };
     }
     pub fn deinit(self: Substitution, alloc: Allocator) void {
         alloc.free(self.to);
         alloc.free(self.from);
+        alloc.free(self.pname);
     }
 };
 
@@ -200,7 +204,7 @@ pub const BufIter = struct {
     }
 
     pub fn peekUntil(self: BufIter, until: []const u8) ?[]const u8 {
-        if ((self.ptr + until.len) >= self.buf.len) return null;
+        if ((self.ptr + until.len) > self.buf.len) return null;
 
         for ((self.ptr + 1)..self.buf.len) |ptr| {
             if (!std.mem.eql(u8, self.buf[ptr..(ptr + until.len)], until))
@@ -212,7 +216,7 @@ pub const BufIter = struct {
     }
 
     pub fn peekUntilBefore(self: BufIter, until: []const u8) ?[]const u8 {
-        if ((self.ptr + until.len) >= self.buf.len) return null;
+        if ((self.ptr + until.len) > self.buf.len) return null;
 
         for ((self.ptr)..(self.buf.len - until.len + 1)) |ptr| {
             if (!std.mem.eql(u8, self.buf[ptr..(ptr + until.len)], until))

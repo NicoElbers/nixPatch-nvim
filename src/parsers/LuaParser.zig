@@ -67,7 +67,7 @@ pub fn createConfig(self: Self, plugins: []const Plugin) !void {
             .file => {
                 if (std.mem.eql(u8, ".lua", std.fs.path.extension(entry.basename))) {
                     std.debug.print("Lua file {s}\n", .{entry.basename});
-                    const in_file = try self.in_dir.openFile(entry.path, .{});
+                    const in_file = try self.in_dir.openFile(entry.path, .{ .truncate = true });
                     const in_buf = try utils.mmapFile(in_file, .{});
                     defer utils.unMmapFile(in_buf);
 
@@ -102,6 +102,7 @@ fn createSubsitutions(alloc: Allocator, plugins: []const Plugin) ![]Substitution
                     alloc,
                     plugin.url,
                     plugin.path,
+                    plugin.pname,
                 ));
             },
             .GithubUrl => {
@@ -109,6 +110,7 @@ fn createSubsitutions(alloc: Allocator, plugins: []const Plugin) ![]Substitution
                     alloc,
                     plugin.url,
                     plugin.path,
+                    plugin.pname,
                 ));
 
                 var url_splitter = std.mem.splitSequence(u8, plugin.url, "://github.com/");
@@ -119,6 +121,7 @@ fn createSubsitutions(alloc: Allocator, plugins: []const Plugin) ![]Substitution
                     alloc,
                     short_url,
                     plugin.path,
+                    plugin.pname,
                 ));
             },
         }
@@ -140,7 +143,6 @@ fn parseLuaFile(alloc: Allocator, input_buf: []const u8, subs: []const Substitut
         var chosen_sub: ?Substitution = null;
         var chosen_skipped: ?[]const u8 = null;
         inner: for (subs) |sub| {
-            std.debug.print("Looking for: {s}\n", .{sub.from});
             const skip_str = iter.peekUntilBefore(sub.from) orelse continue :inner;
             if (chosen_skipped == null or skip_str.len < chosen_skipped.?.len) {
                 chosen_skipped = skip_str;
@@ -153,10 +155,11 @@ fn parseLuaFile(alloc: Allocator, input_buf: []const u8, subs: []const Substitut
             std.debug.print("Adding rest: ...\n", .{});
             try out_arr.appendSlice(iter.rest() orelse "");
         } else {
-            std.debug.print("Adding skipped: {?s}\n", .{chosen_skipped});
-            std.debug.print("Adding sub    : {s}\n", .{chosen_sub.?.to});
+            std.debug.print("Adding sub: {s}\n", .{chosen_sub.?.to});
             try out_arr.appendSlice(chosen_skipped.?);
             try out_arr.appendSlice(chosen_sub.?.to);
+            try out_arr.appendSlice(",\n");
+            try out_arr.appendSlice(chosen_sub.?.pname);
             iter.ptr += chosen_skipped.?.len;
             iter.ptr += chosen_sub.?.from.len;
         }
@@ -174,6 +177,7 @@ test "parseLuaFile copy" {
         Substitution{
             .from = "asdf",
             .to = "fdsa",
+            .pname = "fdas",
         },
     };
 
@@ -186,12 +190,13 @@ test "parseLuaFile copy" {
 test "parseLuaFile simple sub" {
     const alloc = std.testing.allocator;
     const input_buf = "Hello world";
-    const expected = "hi world";
+    const expected = "hi,\npname world";
 
     const subs = &.{
         Substitution{
             .from = "Hello",
             .to = "hi",
+            .pname = "pname",
         },
     };
 
@@ -204,18 +209,50 @@ test "parseLuaFile simple sub" {
 test "parseLuaFile multiple subs" {
     const alloc = std.testing.allocator;
     const input_buf = "Hello world";
-    const expected = "world Hello";
+    const expected = "world,\n Hello,\n";
 
     const subs = &.{
         Substitution{
             .from = "Hello",
             .to = "world",
+            .pname = "",
         },
         Substitution{
             .from = "world",
             .to = "Hello",
+            .pname = "",
         },
     };
+
+    const out_buf = try parseLuaFile(alloc, input_buf, subs);
+    defer alloc.free(out_buf);
+
+    try std.testing.expectEqualStrings(expected, out_buf);
+}
+
+test "test plugin" {
+    const alloc = std.testing.allocator;
+    const input_buf =
+        \\"short/url"
+    ;
+    const expected =
+        \\dir = "local/path",
+        \\name = "pname"
+    ;
+
+    const subs: []const Substitution = &.{
+        try Substitution.init(
+            alloc,
+            "short/url",
+            "local/path",
+            "pname",
+        ),
+    };
+    defer {
+        for (subs) |sub| {
+            sub.deinit(alloc);
+        }
+    }
 
     const out_buf = try parseLuaFile(alloc, input_buf, subs);
     defer alloc.free(out_buf);
