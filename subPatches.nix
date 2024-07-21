@@ -3,14 +3,14 @@ let
   githubURL = shortUrl: plugin:
     [
       {
-        from = shortUrl;
+        from = ''"${shortUrl}"''; # Be sure to also take the quotes
         to = ''
           dir = [[${plugin}]],
           name = [[${plugin.pname}]]
         '';
       }
       {
-        from = "https://github.com/${shortUrl}";
+        from = ''"https://github.com/${shortUrl}"'';
         to = ''
           dir = [[${plugin}]],
           name = [[${plugin.pname}]]
