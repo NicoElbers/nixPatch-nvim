@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
 
-    # neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
+    neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
   };
 
   outputs = { nixpkgs, ... }@inputs: 
@@ -115,7 +115,7 @@
         marksman
         pyright
         # inputs.zls.packages.${pkgs.system}.zls
-        rust-analyzer
+        rustup # All rust things
 
         # Formatters
         prettierd
@@ -138,10 +138,10 @@
       # Have a look here https://github.com/NixOS/nixpkgs/blob/master/pkgs/build-support/setup-hooks/make-wrapper.sh
       extraWrapperArgs = [ ];
 
-      # Extra python3 packages
+      # Extra python3 packages (must be functions returning lists)
       extraPython3Packages = with pkgs; [ ];
 
-      # Extra Lua packages
+      # Extra Lua packages (must be functions returning lists)
       extraLuaPackages = with pkgs; [ ];
 
       # Dependencies available at build time
@@ -152,6 +152,12 @@
 
       aliases = [ "vim" "vi" ];
 
+      customSubs = with pkgs.vimPlugins; 
+        (import ./subPatches.nix {inherit pkgs;})
+        ++ [
+
+        ];
+
       settings = {
         withNodeJs = true;
         withRuby = true;
@@ -160,8 +166,8 @@
         extraName = "";
         configDirName = "nvim";
         aliases = null;
-        neovim-unwrapped = null;
-        # neovim-unwrapped = inputs.neovim-nightly-overlay.packages.${pkgs.system}.neovim;
+        # neovim-unwrapped = null;
+        neovim-unwrapped = inputs.neovim-nightly-overlay.packages.${pkgs.system}.neovim;
 
         suffix-path = false;
         suffix-LD = false;
