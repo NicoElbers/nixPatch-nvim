@@ -67,7 +67,7 @@ pub fn createConfig(self: Self, plugins: []const Plugin) !void {
             .file => {
                 if (std.mem.eql(u8, ".lua", std.fs.path.extension(entry.basename))) {
                     std.debug.print("Lua file {s}\n", .{entry.basename});
-                    const in_file = try self.in_dir.openFile(entry.path, .{ .truncate = true });
+                    const in_file = try self.in_dir.openFile(entry.path, .{});
                     const in_buf = try utils.mmapFile(in_file, .{});
                     defer utils.unMmapFile(in_buf);
 
