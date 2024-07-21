@@ -14,9 +14,10 @@ const Self = @This();
 alloc: Allocator,
 in_dir: Dir,
 out_dir: Dir,
+extra_init_config: []const u8,
 
 // TODO: Change paths to dirs
-pub fn init(alloc: Allocator, in_path: []const u8, out_path: []const u8) !Self {
+pub fn init(alloc: Allocator, in_path: []const u8, out_path: []const u8, extra_init_config: []const u8) !Self {
     assert(fs.path.isAbsolute(in_path));
     assert(fs.path.isAbsolute(out_path));
 
@@ -24,7 +25,12 @@ pub fn init(alloc: Allocator, in_path: []const u8, out_path: []const u8) !Self {
     const in_dir = try fs.openDirAbsolute(in_path, .{ .iterate = true });
 
     std.log.debug("Attempting to create '{s}'", .{out_path});
-    try fs.makeDirAbsolute(out_path);
+
+    // Go on if the dir already exists
+    fs.accessAbsolute(out_path, .{}) catch {
+        try fs.makeDirAbsolute(out_path);
+    };
+
     std.log.debug("Attempting to open '{s}'", .{out_path});
     const out_dir = try fs.openDirAbsolute(out_path, .{});
 
@@ -32,6 +38,7 @@ pub fn init(alloc: Allocator, in_path: []const u8, out_path: []const u8) !Self {
         .alloc = alloc,
         .in_dir = in_dir,
         .out_dir = out_dir,
+        .extra_init_config = extra_init_config,
     };
 }
 
@@ -46,8 +53,8 @@ pub fn deinit(self: *Self) void {
 /// iterates over the input directory recursively. It copies non lua files
 /// directly and parses lua files for substitutions before copying the parsed
 /// files over.
-pub fn createConfig(self: Self, plugins: []const Plugin) !void {
-    const subs = try createSubsitutions(self.alloc, plugins);
+pub fn createConfig(self: Self, plugins: []const Plugin, sub_arr: *std.ArrayList(Substitution)) !void {
+    const subs = try createSubsitutions(self.alloc, plugins, sub_arr);
     defer {
         for (subs) |sub| {
             sub.deinit(self.alloc);
@@ -62,7 +69,10 @@ pub fn createConfig(self: Self, plugins: []const Plugin) !void {
     while (try walker.next()) |entry| {
         switch (entry.kind) {
             .directory => {
-                try self.out_dir.makeDir(entry.path);
+                // Go on if the dir already exists
+                self.out_dir.access(entry.path, .{}) catch {
+                    try self.out_dir.makeDir(entry.path);
+                };
             },
             .file => {
                 if (std.mem.eql(u8, ".lua", std.fs.path.extension(entry.basename))) {
@@ -75,6 +85,11 @@ pub fn createConfig(self: Self, plugins: []const Plugin) !void {
                     defer self.alloc.free(out_buf);
 
                     const out_file = try self.out_dir.createFile(entry.path, .{});
+
+                    if (std.mem.eql(u8, entry.path, "init.lua")) {
+                        try out_file.writeAll(self.extra_init_config);
+                    }
+
                     try out_file.writeAll(out_buf);
                 } else {
                     std.log.info("copying '{s}'", .{entry.path});
@@ -91,14 +106,12 @@ pub fn createConfig(self: Self, plugins: []const Plugin) !void {
     }
 }
 
-fn createSubsitutions(alloc: Allocator, plugins: []const Plugin) ![]Substitution {
-    var subs = std.ArrayList(Substitution).init(alloc);
-
+fn createSubsitutions(alloc: Allocator, plugins: []const Plugin, subs: *std.ArrayList(Substitution)) ![]Substitution {
     for (plugins) |plugin| {
         switch (plugin.tag) {
             .UrlNotFound => continue,
             .GitUrl => {
-                try subs.append(try Substitution.init(
+                try subs.append(try Substitution.initUrlSub(
                     alloc,
                     plugin.url,
                     plugin.path,
@@ -106,7 +119,7 @@ fn createSubsitutions(alloc: Allocator, plugins: []const Plugin) ![]Substitution
                 ));
             },
             .GithubUrl => {
-                try subs.append(try Substitution.init(
+                try subs.append(try Substitution.initUrlSub(
                     alloc,
                     plugin.url,
                     plugin.path,
@@ -117,7 +130,7 @@ fn createSubsitutions(alloc: Allocator, plugins: []const Plugin) ![]Substitution
                 _ = url_splitter.next().?;
                 const short_url = url_splitter.rest();
 
-                try subs.append(try Substitution.init(
+                try subs.append(try Substitution.initUrlSub(
                     alloc,
                     short_url,
                     plugin.path,
@@ -154,11 +167,8 @@ fn parseLuaFile(alloc: Allocator, input_buf: []const u8, subs: []const Substitut
             assert(chosen_skipped != null);
 
             std.log.debug("Sub '{s}' -> '{s}'", .{ sub.from, sub.to });
-            std.log.debug("Add  '{s}'", .{sub.pname});
             try out_arr.appendSlice(chosen_skipped.?);
             try out_arr.appendSlice(sub.to);
-            try out_arr.appendSlice(",\n");
-            try out_arr.appendSlice(sub.pname);
             iter.ptr += chosen_skipped.?.len;
             iter.ptr += sub.from.len;
         } else {
@@ -194,7 +204,6 @@ test "parseLuaFile copy" {
         Substitution{
             .from = "asdf",
             .to = "fdsa",
-            .pname = "fdas",
         },
     };
 
@@ -207,13 +216,12 @@ test "parseLuaFile copy" {
 test "parseLuaFile simple sub" {
     const alloc = std.testing.allocator;
     const input_buf = "Hello world";
-    const expected = "hi,\npname world";
+    const expected = "hi world";
 
     const subs = &.{
         Substitution{
             .from = "Hello",
             .to = "hi",
-            .pname = "pname",
         },
     };
 
@@ -226,18 +234,16 @@ test "parseLuaFile simple sub" {
 test "parseLuaFile multiple subs" {
     const alloc = std.testing.allocator;
     const input_buf = "Hello world";
-    const expected = "world,\n Hello,\n";
+    const expected = "world Hello";
 
     const subs = &.{
         Substitution{
             .from = "Hello",
             .to = "world",
-            .pname = "",
         },
         Substitution{
             .from = "world",
             .to = "Hello",
-            .pname = "",
         },
     };
 
@@ -258,7 +264,7 @@ test "test plugin" {
     ;
 
     const subs: []const Substitution = &.{
-        try Substitution.init(
+        try Substitution.initUrlSub(
             alloc,
             "short/url",
             "local/path",

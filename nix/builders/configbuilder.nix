@@ -14,6 +14,7 @@
   , withRuby
   , withPerl
 }:
+{ finalPackDir, extraLuaConfig ? [], customSubs ? [ ] }:
 let
   hostprog_check_table = {
     node = withNodeJs;
@@ -25,18 +26,29 @@ let
 
   genProviderCmd = prog: withProg: 
     if withProg 
-    then "vim.g.${prog}_host_prog='${placeholder "out"}/bin/${name}-${prog}"
+    then "vim.g.${prog}_host_prog='${placeholder "out"}/bin/${name}-${prog}'"
     else "vim.g.loaded_${prog}_provider=0";
 
   # TODO: pass these in as extra config later
   hostProviderLua = lib.mapAttrsToList genProviderCmd hostprog_check_table;
+
+  finalExtaConfig = builtins.concatStringsSep "\n" (
+        hostProviderLua
+        ++ [ "vim.g.nixos = true"]
+        ++ (if (builtins.isList extraLuaConfig) then extraLuaConfig else [extraLuaConfig])
+        ++ [ "\n" ]);
+
+  finalExtaConfigEscaped = lib.escapeShellArgs [finalExtaConfig];
 
   # TODO: pass in a zig version here
   configPatcher = callPackage ./zigBuilder.nix { };
   configPatcherExe = lib.getExe configPatcher;
 
   inputBlob = lib.escapeShellArgs [(builtins.concatStringsSep ";"
-      (builtins.map (plugin: "${plugin.pname}|${plugin.version}|${plugin}") plugins))];
+    (builtins.map (plugin: "${plugin.pname}|${plugin.version}|${plugin}") plugins))];
+
+  subBlob = lib.escapeShellArgs [(builtins.concatStringsSep ";"
+    (map (s: "${s.from}|${s.to}") customSubs))];
 
 in 
 stdenvNoCC.mkDerivation {
@@ -49,7 +61,10 @@ stdenvNoCC.mkDerivation {
 
   buildPhase = /* bash */ ''
     echo "Starting patcher"
-    ${configPatcherExe} ${nixpkgsOutPath} $(pwd) $out ${inputBlob}
+    ${configPatcherExe} ${nixpkgsOutPath} $(pwd) $out \
+      ${inputBlob} \
+      ${subBlob} \
+      ${finalExtaConfigEscaped} \
     echo "done with patcher"
 
     echo "##################"

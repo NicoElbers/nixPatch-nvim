@@ -7,40 +7,91 @@
   , python3
   , callPackage
   , lndir
+  , coreutils
+
+  , perl
+  , vimUtils
+  , neovimUtils
 }:
 neovim-unwrapped:
 let
   lua = neovim-unwrapped.lua;
   wrapper = {
-    luaConfig
+    luaConfigFn
     , luaEnv
+    , packpathDirs 
+    , manifestRc
+    , neovimRcContent
+    , customSubs ? { }
+    , extraLuaConfig ? [] 
     , aliases ? null
-    , wrapRc ? true
-    , wrapperArgs ? ""
     , extraName ? ""
     , withRuby ? false
     , rubyEnv ? null
     , withPython3 ? false
-    , python3Env ? null
+    , python3Env ? python3
     , withPerl ? false
-    , perlEnv ? null
     , withNodeJs ? false
-    , python3WrapperArgs ? ""
+    , wrapRc ? true
+    , wrapperArgs ? ""
+    , extraPython3WrapperArgs ? ""
   }:
   let
     name = "nv-test";
   in 
   stdenv.mkDerivation (finalAttrs: 
     let
-      finalMakeWrapperArgs =
-        [ "${neovim-unwrapped}/bin/nvim" "${placeholder "out"}/bin/${name}"]
-        ++ lib.optionals finalAttrs.wrapRc [ "--add-flags" "-u ${luaConfig}/init.lua" ];
+      finalPackDir = (callPackage ./packDir.nix {}) packpathDirs;
 
-      extraPython3ArgsStr = builtins.concatStringsSep " " python3WrapperArgs;
+      finalLuaConfig = luaConfigFn { inherit extraLuaConfig customSubs finalPackDir; };
+
+      rcContent = ''
+        vim.g.configdir = vim.fn.stdpath('config')
+        vim.opt.packpath:remove(vim.g.configdir)
+        vim.opt.runtimepath:remove(vim.g.configdir)
+        vim.opt.runtimepath:remove(vim.g.configdir .. "/after")
+        vim.g.configdir = [[${finalLuaConfig}]]
+        vim.opt.packpath:prepend(vim.g.configdir)
+        vim.opt.runtimepath:prepend(vim.g.configdir)
+        vim.opt.runtimepath:append(vim.g.configdir .. "/after") 
+
+        if vim.fn.filereadable(vim.g.configdir .. "/init.vim") == 1 then
+          vim.cmd.source(vim.g.configdir .. "/init.vim")
+        end
+        if vim.fn.filereadable(vim.g.configdir .. "/init.lua") == 1 then
+          dofile(vim.g.configdir .. "/init.lua")
+        end
+      '';
+
+      luaProviderRc = neovimUtils.generateProviderRc {
+        inherit withPython3 withNodeJs withRuby withPerl;
+      };
+
+      generatedWrapperArgs = 
+        ["--add-flags" ''--cmd "lua ${luaProviderRc}"'']
+        ++ lib.optionals (packpathDirs.myNeovimPackages.start != [] || packpathDirs.myNeovimPackages.end != [])
+        [
+          "--add-flags" ''--cmd "set packpath^=${finalPackDir}"''
+          "--add-flags" ''--cmd "set rtp^=${finalPackDir}"''
+        ];
 
       wrapperArgsStr = if lib.isString wrapperArgs then wrapperArgs else lib.escapeShellArgs wrapperArgs;
+
+      finalMakeWrapperArgs =
+        [ "${neovim-unwrapped}/bin/nvim" "${placeholder "out"}/bin/${name}"]
+        ++ [ "--set" "NVIM_SYSTEM_RPLUGIN_MANIFEST" "${placeholder "out"}/rplugin.vim" ]
+        ++ lib.optionals finalAttrs.wrapRc [ "--add-flags" "-u ${writeText "init.lua" rcContent}" ]
+        ++ generatedWrapperArgs;
+
+      perlEnv = perl.withPackages (p: [ p.NeovimExt p.Appcpanminus ]);
+
+      shellCode = builtins.concatStringsSep "\n" ([/*bash*/''
+        NVIM_WRAPPER_PATH_NIX="$(${coreutils}/bin/readlink -f "$0")"
+        export NVIM_WRAPPER_PATH_NIX
+      '']);
+      preWrapperShellFile = writeText "preNVWrapperShellCode" shellCode;
     in {
-      name = "neovim-${lib.getVersion neovim-unwrapped}${extraName}";
+      name = "${name}-${lib.getVersion neovim-unwrapped}${extraName}";
 
       __structuredAttrs = true;
       dontUnpack = true;
@@ -49,17 +100,18 @@ let
       inherit withRuby rubyEnv;
       inherit withPerl perlEnv;
       inherit withPython3 python3Env;
-      inherit wrapRc;
+      luaRcContent = rcContent; # Why the rename?
+      inherit wrapRc generatedWrapperArgs;
 
       postBuild = lib.optionalString stdenv.isLinux ''
         rm $out/share/applications/nvim.desktop
         substitute ${neovim-unwrapped}/share/applications/nvim.desktop $out/share/applications/${name}.desktop \
-              --replace 'Name=Neovim' 'Name=${name}'\
-              --replace 'TryExec=nvim' 'TryExec=${name}'\
-              --replace 'Exec=nvim %F' 'Exec=${name} %F'
+              --replace-fail 'Name=Neovim' 'Name=${name}'\
+              --replace-fail 'TryExec=nvim' 'TryExec=${name}'\
+              --replace-fail 'Exec=nvim %F' 'Exec=${name} %F'
       ''
       + lib.optionalString finalAttrs.withPython3 ''
-        makeWrapper ${python3Env.interpreter} $out/bin/${name}-python3 --unset PYTHONPATH ${extraPython3ArgsStr}
+        makeWrapper ${python3Env.interpreter} $out/bin/${name}-python3 --unset PYTHONPATH ${builtins.concatStringsSep " " extraPython3WrapperArgs}
       ''
       + lib.optionalString finalAttrs.withRuby ''
         ln -s ${finalAttrs.rubyEnv}/bin/neovim-ruby-host $out/bin/${name}-ruby
@@ -74,19 +126,70 @@ let
       (builtins.concatStringsSep "\n" (builtins.map (alias: ''
         ln -s $out/bin/${name} $out/bin/${alias}
       '') aliases))
+      + lib.optionalString (manifestRc != null) (let
+        manifestWrapperArgs = 
+          [ "${neovim-unwrapped}/bin/nvim" "${placeholder "out"}/bin/nvim-wrapper" ]
+          ++ finalAttrs.generatedWrapperArgs;
+      in ''
+        # Copies straight from nixpkgs, things don't work without it
+
+        echo "Generating remote plugin manifest"
+        export NVIM_RPLUGIN_MANIFEST=$out/rplugin.vim
+        makeWrapper ${lib.escapeShellArgs manifestWrapperArgs} ${wrapperArgsStr}
+
+        # Some plugins assume that the home directory is accessible for
+        # initializing caches, temporary files, etc. Even if the plugin isn't
+        # actively used, it may throw an error as soon as Neovim is launched
+        # (e.g., inside an autoload script), causing manifest generation to
+        # fail. Therefore, let's create a fake home directory before generating
+        # the manifest, just to satisfy the needs of these plugins.
+        #
+        # See https://github.com/Yggdroot/LeaderF/blob/v1.21/autoload/lfMru.vim#L10
+        # for an example of this behavior.
+        export HOME="$(mktemp -d)"
+
+        # Launch neovim with a vimrc file containing only the generated plugin
+        # code. Pass various flags to disable temp file generation
+        # (swap/viminfo) and redirect errors to stderr.
+        # Only display the log on error since it will contain a few normally
+        # irrelevant messages.
+        if ! $out/bin/nvim-wrapper \
+          -u ${writeText "manifest.vim" manifestRc} \
+          -i NONE -n \
+          -V1rplugins.log \
+          +UpdateRemotePlugins +quit! > outfile 2>&1; then
+          cat outfile
+          echo -e "\nGenerating rplugin.vim failed!"
+          exit 1
+        fi
+        rm "${placeholder "out"}/bin/nvim-wrapper"
+      '')
       + /* bash */ ''
         rm $out/bin/nvim
+        touch $out/rplugin.vim
 
-        source ${lua}/nix-support/utils.sh
+        echo "Looking for lua dependencies..."
+        source ${lua}/nix-support/utils.sh || true
+        _addToLuaPath "${finalPackDir}" || true
+        
+        echo "#################################################"
+        echo "LUA_PATH: $LUA_PATH"
+        echo "LUA_CPATH: $LUA_CPATH"
+        echo "#################################################"
 
         makeWrapper ${lib.escapeShellArgs finalMakeWrapperArgs} ${wrapperArgsStr} \
           --prefix LUA_PATH ';' "$LUA_PATH" \
           --prefix LUA_CPATH ';' "$LUA_CPATH"
-      '';
 
-        # makeWrapper ${lib.escapeShellArgs finalMakeWrapperArgs} ${wrapperArgsStr} \
-        #   --prefix LUA_PATH ';' "$LUA_PATH" \
-        #   --prefix LUA_CPATH ';' "$LUA_CPATH"
+        # no clue what this is for, but at this point fuck it
+        export BASHCACHE=$(mktemp)
+        head -1 ${placeholder "out"}/bin/${name} > $BASHCACHE
+        # Add code
+        cat ${preWrapperShellFile} >> $BASHCACHE
+        tail +2 ${placeholder "out"}/bin/${name} >> $BASHCACHE
+        cat $BASHCACHE > ${placeholder "out"}/bin/${name}
+        rm $BASHCACHE
+      '';
 
       buildPhase = ''
         runHook preBuild
@@ -103,6 +206,12 @@ let
       nativeBuildInputs = [ makeWrapper lndir ];
 
       # TODO: potentially add passtru
+      passthru = {
+          inherit finalPackDir;
+
+          unwrapped = neovim-unwrapped;
+          config = finalLuaConfig;
+      };
 
       meta = neovim-unwrapped.meta // {
         hydraPlatforms = [ ];

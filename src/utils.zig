@@ -39,11 +39,10 @@ pub const Plugin = struct {
 pub const Substitution = struct {
     from: []const u8,
     to: []const u8,
-    pname: []const u8,
 
     const Tag = enum { url, githubShort };
 
-    pub fn init(
+    pub fn initUrlSub(
         alloc: Allocator,
         from: []const u8,
         to: []const u8,
@@ -51,14 +50,12 @@ pub const Substitution = struct {
     ) !Substitution {
         return Substitution{
             .from = try std.fmt.allocPrint(alloc, "\"{s}\"", .{from}),
-            .to = try std.fmt.allocPrint(alloc, "dir = \"{s}\"", .{to}),
-            .pname = try std.fmt.allocPrint(alloc, "name = \"{s}\"", .{pname}),
+            .to = try std.fmt.allocPrint(alloc, "dir = \"{s}\",\nname = \"{s}\"", .{ to, pname }),
         };
     }
     pub fn deinit(self: Substitution, alloc: Allocator) void {
         alloc.free(self.to);
         alloc.free(self.from);
-        alloc.free(self.pname);
     }
 };
 
@@ -155,6 +152,12 @@ pub const BufIter = struct {
     pub fn nextUntil(self: *BufIter, until: []const u8) ?[]const u8 {
         const str = self.peekUntil(until) orelse return null;
         defer self.ptr += str.len;
+        return str;
+    }
+
+    pub fn nextUntilExcluding(self: *BufIter, until: []const u8) ?[]const u8 {
+        const str = self.peekUntilBefore(until) orelse return null;
+        defer self.ptr += str.len + 1;
         return str;
     }
 
