@@ -3,7 +3,9 @@ local utils = require("utils")
 return {
     "nvim-treesitter/nvim-treesitter",
     dependencies = {
-        "nvim-treesitter/nvim-treesitter-textobjects",
+        {
+            "nvim-treesitter/nvim-treesitter-textobjects",
+        },
     },
     build = utils.set(":TSUpdate"),
     config = function()
