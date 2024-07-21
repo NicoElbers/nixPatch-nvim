@@ -20,12 +20,12 @@ pub fn init(alloc: Allocator, in_path: []const u8, out_path: []const u8) !Self {
     assert(fs.path.isAbsolute(in_path));
     assert(fs.path.isAbsolute(out_path));
 
-    std.log.debug("Attempting to open dir {s}", .{in_path});
+    std.log.debug("Attempting to open dir '{s}'", .{in_path});
     const in_dir = try fs.openDirAbsolute(in_path, .{ .iterate = true });
 
-    std.log.debug("Attempting to create {s}", .{out_path});
+    std.log.debug("Attempting to create '{s}'", .{out_path});
     try fs.makeDirAbsolute(out_path);
-    std.log.debug("Attempting to open {s}", .{out_path});
+    std.log.debug("Attempting to open '{s}'", .{out_path});
     const out_dir = try fs.openDirAbsolute(out_path, .{});
 
     return Self{
@@ -58,7 +58,7 @@ pub fn createConfig(self: Self, plugins: []const Plugin) !void {
     var walker = try self.in_dir.walk(self.alloc);
     defer walker.deinit();
 
-    std.debug.print("Starting walk\n", .{});
+    std.log.info("Starting directory walk", .{});
     while (try walker.next()) |entry| {
         switch (entry.kind) {
             .directory => {
@@ -66,7 +66,7 @@ pub fn createConfig(self: Self, plugins: []const Plugin) !void {
             },
             .file => {
                 if (std.mem.eql(u8, ".lua", std.fs.path.extension(entry.basename))) {
-                    std.debug.print("Lua file {s}\n", .{entry.basename});
+                    std.log.info("parsing '{s}'", .{entry.path});
                     const in_file = try self.in_dir.openFile(entry.path, .{});
                     const in_buf = try utils.mmapFile(in_file, .{});
                     defer utils.unMmapFile(in_buf);
@@ -77,7 +77,7 @@ pub fn createConfig(self: Self, plugins: []const Plugin) !void {
                     const out_file = try self.out_dir.createFile(entry.path, .{});
                     try out_file.writeAll(out_buf);
                 } else {
-                    std.debug.print("non-lua file {s}\n", .{entry.basename});
+                    std.log.info("copying '{s}'", .{entry.path});
                     try self.in_dir.copyFile(
                         entry.path,
                         self.out_dir,
@@ -150,19 +150,36 @@ fn parseLuaFile(alloc: Allocator, input_buf: []const u8, subs: []const Substitut
             }
         }
 
-        if (chosen_sub == null) {
-            // TODO: Move this out the loop pls
-            std.debug.print("Adding rest: ...\n", .{});
-            try out_arr.appendSlice(iter.rest() orelse "");
-        } else {
-            std.debug.print("Adding sub: {s}\n", .{chosen_sub.?.to});
+        if (chosen_sub) |sub| {
+            assert(chosen_skipped != null);
+
+            std.log.debug("Sub '{s}' -> '{s}'", .{ sub.from, sub.to });
+            std.log.debug("Add  '{s}'", .{sub.pname});
             try out_arr.appendSlice(chosen_skipped.?);
-            try out_arr.appendSlice(chosen_sub.?.to);
+            try out_arr.appendSlice(sub.to);
             try out_arr.appendSlice(",\n");
-            try out_arr.appendSlice(chosen_sub.?.pname);
+            try out_arr.appendSlice(sub.pname);
             iter.ptr += chosen_skipped.?.len;
-            iter.ptr += chosen_sub.?.from.len;
+            iter.ptr += sub.from.len;
+        } else {
+            std.log.debug("No more subs in this file...", .{});
+            try out_arr.appendSlice(iter.rest() orelse "");
         }
+
+        // if (chosen_sub == null) {
+        //     // TODO: Move this out the loop pls
+        //     std.log.debug("No more subs in this file...", .{});
+        //     try out_arr.appendSlice(iter.rest() orelse "");
+        // } else {
+        //     std.log.debug("Sub {s} -> {s}", .{ chosen_sub.?.from, chosen_sub.?.to });
+        //     std.log.debug("Add  {s}", .{chosen_sub.?.pname});
+        //     try out_arr.appendSlice(chosen_skipped.?);
+        //     try out_arr.appendSlice(chosen_sub.?.to);
+        //     try out_arr.appendSlice(",\n");
+        //     try out_arr.appendSlice(chosen_sub.?.pname);
+        //     iter.ptr += chosen_skipped.?.len;
+        //     iter.ptr += chosen_sub.?.from.len;
+        // }
     }
 
     return out_arr.toOwnedSlice();

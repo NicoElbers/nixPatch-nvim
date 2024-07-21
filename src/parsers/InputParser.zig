@@ -172,7 +172,6 @@ fn findPluginUrl(alloc: Allocator, vim_plugin_buf: []const u8, plugins: []Plugin
                     continue :outer;
 
                 const url = trim(split.next().?);
-                std.debug.print("url: {s} : plug {s}\n", .{ url, plugin.url });
                 assert(eql(url, plugin.url));
 
                 relevant_urls_found += 1;

@@ -75,7 +75,7 @@ fn getPlugins(alloc: Allocator, nixpkgs_path: []const u8, input_blob: []const u8
     });
     defer alloc.free(full_path);
 
-    std.log.debug("Attempting to open file {s}", .{full_path});
+    std.log.debug("Attempting to open file '{s}'", .{full_path});
     const vim_plugins_file = try fs.openFileAbsolute(full_path, .{});
 
     // Get plugins

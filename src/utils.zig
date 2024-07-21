@@ -115,12 +115,9 @@ pub const BufIter = struct {
         if ((self.ptr + until.len) >= self.buf.len) return null;
 
         for ((self.ptr)..self.buf.len) |ptr| {
-            std.debug.print("lookin at: '{s}'\n", .{self.buf[ptr..(ptr + until.len)]});
-            std.debug.print("lookin to: '{s}'\n", .{until});
             if (!std.mem.eql(u8, self.buf[ptr..(ptr + until.len)], until))
                 continue;
 
-            std.debug.print("found    : '{s}'\n", .{until});
             if (!std.mem.eql(u8, self.buf[ptr..(ptr + until.len)], until))
                 self.ptr = ptr;
 
