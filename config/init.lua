@@ -1,4 +1,4 @@
--- Load the things
+-- -- Load the things
 require("options")
 require("keymaps")
 require("autocmds")
