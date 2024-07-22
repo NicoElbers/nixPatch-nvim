@@ -9,7 +9,7 @@
 let
   utils = import ../utils;
 
-  name = "nv-test";
+  name = "nv";
 
   pkgs = import nixpkgs ({
     inherit system;
@@ -130,4 +130,6 @@ in
 
   inherit withNodeJs withRuby withPerl withPython3; 
   inherit extraPython3WrapperArgs; # TODO: conditionally unset pythonsafepath
+
+  inherit name;
 })

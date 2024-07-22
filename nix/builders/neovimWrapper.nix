@@ -35,10 +35,8 @@ let
     , wrapRc ? true
     , wrapperArgs ? ""
     , extraPython3WrapperArgs ? ""
+    , name ? "nv"
   }:
-  let
-    name = "nv-test";
-  in 
   stdenv.mkDerivation (finalAttrs: 
     let
       finalPackDir = (callPackage ./packDir.nix {}) packpathDirs;
