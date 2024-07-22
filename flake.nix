@@ -67,6 +67,8 @@
         rustaceanvim
         none-ls-nvim
 
+        nvim-dap # rustaceanvim dep
+
         # treesitter
         nvim-treesitter-textobjects
         nvim-treesitter.withAllGrammars
@@ -114,8 +116,14 @@
         nil
         marksman
         pyright
+
+        # Zig sucks bc the LSP is only suported for master
         # inputs.zls.packages.${pkgs.system}.zls
-        rustup # All rust things
+
+        # Rust
+        rust-analyzer
+        cargo
+        rustc
 
         # Formatters
         prettierd
