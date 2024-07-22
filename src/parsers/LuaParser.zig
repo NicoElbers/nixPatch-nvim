@@ -259,8 +259,8 @@ test "test plugin" {
         \\"short/url"
     ;
     const expected =
-        \\dir = "local/path",
-        \\name = "pname"
+        \\dir = [[local/path]],
+        \\name = [[pname]]
     ;
 
     const subs: []const Substitution = &.{

@@ -50,7 +50,8 @@ pub const Substitution = struct {
     ) !Substitution {
         return Substitution{
             .from = try std.fmt.allocPrint(alloc, "\"{s}\"", .{from}),
-            .to = try std.fmt.allocPrint(alloc, "dir = \"{s}\",\nname = \"{s}\"", .{ to, pname }),
+            .to = try std.fmt.allocPrint(alloc, "dir = [[{s}]],\nname = [[{s}]]", .{ to, pname },),
+                
         };
     }
     pub fn deinit(self: Substitution, alloc: Allocator) void {
