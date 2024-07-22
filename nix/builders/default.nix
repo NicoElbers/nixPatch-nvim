@@ -1,5 +1,6 @@
 {
-  baseBuilder = import ./baseBuilder.nix;
+  baseBuilder = import ./nvBaseBuilder.nix;
   configBuilder = import ./configbuilder.nix;
+  zigBuilder = import ./zigBuilder.nix;
 }
 

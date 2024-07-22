@@ -39,7 +39,7 @@ let
   }:
   stdenv.mkDerivation (finalAttrs: 
     let
-      rtp = (callPackage ./packDir.nix {}) neovim-unwrapped packpathDirs;
+      rtp = (callPackage ./rtpBuilder.nix {}) neovim-unwrapped packpathDirs;
 
       finalLuaConfig = luaConfigFn { inherit extraLuaConfig customSubs; };
 
