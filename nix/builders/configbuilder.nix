@@ -14,7 +14,7 @@
   , withRuby
   , withPerl
 }:
-{ finalPackDir, extraLuaConfig ? [], customSubs ? [ ] }:
+{ extraLuaConfig ? [], customSubs ? [ ] }:
 let
   hostprog_check_table = {
     node = withNodeJs;

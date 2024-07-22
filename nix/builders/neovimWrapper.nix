@@ -39,9 +39,9 @@ let
   }:
   stdenv.mkDerivation (finalAttrs: 
     let
-      finalPackDir = (callPackage ./packDir.nix {}) packpathDirs;
+      rtp = (callPackage ./packDir.nix {}) neovim-unwrapped packpathDirs;
 
-      finalLuaConfig = luaConfigFn { inherit extraLuaConfig customSubs finalPackDir; };
+      finalLuaConfig = luaConfigFn { inherit extraLuaConfig customSubs; };
 
       rcContent = ''
         vim.g.configdir = vim.fn.stdpath('config')
@@ -67,13 +67,8 @@ let
 
       generatedWrapperArgs = 
         ["--add-flags" ''--cmd "lua ${luaProviderRc}"'']
-        ++ lib.optionals (packpathDirs.myNeovimPackages.start != [] || packpathDirs.myNeovimPackages.opt != [])
-        [
-          "--add-flags" ''--cmd "set packpath^=${finalPackDir}"''
-          "--add-flags" ''--cmd "set rtp^=${finalPackDir}"''
-        ];
 
-      wrapperArgsStr = if lib.isString wrapperArgs then wrapperArgs else lib.escapeShellArgs wrapperArgs;
+        ++ [ "--set" "VIMRUNTIME" "${rtp}"];
 
       finalMakeWrapperArgs =
         [ "${neovim-unwrapped}/bin/nvim" "${placeholder "out"}/bin/${name}"]
@@ -88,6 +83,7 @@ let
         export NVIM_WRAPPER_PATH_NIX
       '']);
       preWrapperShellFile = writeText "preNVWrapperShellCode" shellCode;
+      wrapperArgsStr = if lib.isString wrapperArgs then wrapperArgs else lib.escapeShellArgs wrapperArgs;
     in {
       name = "${name}-${lib.getVersion neovim-unwrapped}${extraName}";
 
@@ -168,7 +164,7 @@ let
 
         echo "Looking for lua dependencies..."
         source ${lua}/nix-support/utils.sh || true
-        _addToLuaPath "${finalPackDir}" || true
+        _addToLuaPath "${rtp}" || true
         
         echo "#################################################"
         echo "LUA_PATH: $LUA_PATH"
@@ -205,7 +201,7 @@ let
 
       # TODO: potentially add passtru
       passthru = {
-          inherit finalPackDir;
+          finalPackDir = rtp;
 
           unwrapped = neovim-unwrapped;
           config = finalLuaConfig;
