@@ -47,6 +47,11 @@ fn parseBlob(alloc: Allocator, input_blob: []const u8) ![]Plugin {
         plugins.deinit();
     }
 
+    // then the blob is empty
+    if (input_blob.len < 3) {
+        return plugins.toOwnedSlice();
+    }
+
     var blob_spliterator = std.mem.splitSequence(u8, input_blob, ";");
     while (blob_spliterator.next()) |plugin_str| {
         var plugin_spliterator = std.mem.splitSequence(u8, plugin_str, "|");

@@ -105,6 +105,10 @@ fn getSubs(alloc: Allocator, extra_subs: []const u8) !std.ArrayList(Substitution
     var sub_arr = std.ArrayList(Substitution).init(alloc);
     errdefer sub_arr.deinit();
 
+    if (extra_subs.len < 3) {
+        return sub_arr;
+    }
+
     while (!iter.isDone()) {
         const from = iter.nextUntilExcluding("|").?;
         const to = iter.nextUntilExcluding(";") orelse iter.rest() orelse return error.BadSub;
