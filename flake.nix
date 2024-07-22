@@ -200,6 +200,7 @@
     devShells.default = with pkgs; mkShell {
       packages = [
         zig
+        zls
         hello
       ];
     };
