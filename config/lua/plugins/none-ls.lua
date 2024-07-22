@@ -2,7 +2,19 @@ local utils = require("utils")
 
 return {
     "nvimtools/none-ls.nvim",
-    lazy = false,
+    dependencies = {
+        {
+            "nvim-lua/plenary.nvim",
+        },
+    },
+    ft = {
+        -- checkstyle
+        "java",
+
+        -- ltrs
+        "markdown",
+        "txt",
+    },
     config = function()
         local none_ls = require("null-ls")
         local bi = none_ls.builtins
