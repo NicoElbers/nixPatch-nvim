@@ -10,7 +10,7 @@ let
         '';
       }
       {
-        from = ''"https://github.com/${shortUrl}"'';
+        from = ''url = "https://github.com/${shortUrl}"'';
         to = ''
           dir = [[${plugin}]],
           name = [[${plugin.pname}]]
