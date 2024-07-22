@@ -104,7 +104,7 @@ let
   extraPython3Packages = utils.combineFns python3Packages;
   extraLuaPackages = utils.combineFns luaPackages;
 
-  mappedPlugins = map (p: { plugin = p; optional = false; }) plugins;
+  mappedPlugins = map (p: { plugin = p; optional = true; }) plugins;
 
   cfg = pkgs.neovimUtils.makeNeovimConfig {
     inherit withPython3 extraPython3Packages;
