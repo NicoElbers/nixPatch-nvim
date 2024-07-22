@@ -1,4 +1,4 @@
--- -- Load the things
+-- Load the things
 require("options")
 require("keymaps")
 require("autocmds")
@@ -25,11 +25,4 @@ end)
 
 load_lazy()
 
-require("lazy").setup("plugins", {
-    performance = {
-        reset_packpath = false,
-        rtp = {
-            reset = false,
-        },
-    },
-})
+require("lazy").setup("plugins")
