@@ -69,7 +69,7 @@ let
 
       generatedWrapperArgs = 
         ["--add-flags" ''--cmd "lua ${luaProviderRc}"'']
-        ++ lib.optionals (packpathDirs.myNeovimPackages.start != [] || packpathDirs.myNeovimPackages.end != [])
+        ++ lib.optionals (packpathDirs.myNeovimPackages.start != [] || packpathDirs.myNeovimPackages.opt != [])
         [
           "--add-flags" ''--cmd "set packpath^=${finalPackDir}"''
           "--add-flags" ''--cmd "set rtp^=${finalPackDir}"''
