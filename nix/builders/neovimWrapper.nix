@@ -48,9 +48,16 @@ let
         inherit withPython3 withNodeJs withRuby withPerl;
       };
 
+      shellCode = builtins.concatStringsSep "\n" ([/*bash*/''
+        NVIM_WRAPPER_PATH_NIX="$(${coreutils}/bin/readlink -f "$0")"
+        export NVIM_WRAPPER_PATH_NIX
+      '']);
+      preWrapperShellFile = writeText "preNVWrapperShellCode" shellCode;
+
+      perlEnv = perl.withPackages (p: [ p.NeovimExt p.Appcpanminus ]);
+
       generatedWrapperArgs = 
         ["--add-flags" ''--cmd "lua ${luaProviderRc}"'']
-
         ++ [ "--set" "VIMRUNTIME" "${rtp}"];
 
       finalMakeWrapperArgs =
@@ -59,13 +66,6 @@ let
         ++ lib.optionals finalAttrs.wrapRc [ "--add-flags" "-u ${finalLuaConfig}/init.lua" ]
         ++ generatedWrapperArgs;
 
-      perlEnv = perl.withPackages (p: [ p.NeovimExt p.Appcpanminus ]);
-
-      shellCode = builtins.concatStringsSep "\n" ([/*bash*/''
-        NVIM_WRAPPER_PATH_NIX="$(${coreutils}/bin/readlink -f "$0")"
-        export NVIM_WRAPPER_PATH_NIX
-      '']);
-      preWrapperShellFile = writeText "preNVWrapperShellCode" shellCode;
       wrapperArgsStr = if lib.isString wrapperArgs then wrapperArgs else lib.escapeShellArgs wrapperArgs;
     in {
       name = "${name}-${lib.getVersion neovim-unwrapped}${extraName}";
