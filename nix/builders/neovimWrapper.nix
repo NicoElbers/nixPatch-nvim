@@ -43,23 +43,6 @@ let
 
       finalLuaConfig = luaConfigFn { inherit extraLuaConfig customSubs; };
 
-      rcContent = ''
-        vim.g.configdir = vim.fn.stdpath('config')
-        vim.opt.packpath:remove(vim.g.configdir)
-        vim.opt.runtimepath:remove(vim.g.configdir)
-        vim.opt.runtimepath:remove(vim.g.configdir .. "/after")
-        vim.g.configdir = [[${finalLuaConfig}]]
-        vim.opt.packpath:prepend(vim.g.configdir)
-        vim.opt.runtimepath:prepend(vim.g.configdir)
-        vim.opt.runtimepath:append(vim.g.configdir .. "/after") 
-
-        if vim.fn.filereadable(vim.g.configdir .. "/init.vim") == 1 then
-          vim.cmd.source(vim.g.configdir .. "/init.vim")
-        end
-        if vim.fn.filereadable(vim.g.configdir .. "/init.lua") == 1 then
-          dofile(vim.g.configdir .. "/init.lua")
-        end
-      '';
 
       luaProviderRc = neovimUtils.generateProviderRc {
         inherit withPython3 withNodeJs withRuby withPerl;
@@ -73,7 +56,7 @@ let
       finalMakeWrapperArgs =
         [ "${neovim-unwrapped}/bin/nvim" "${placeholder "out"}/bin/${name}"]
         ++ [ "--set" "NVIM_SYSTEM_RPLUGIN_MANIFEST" "${placeholder "out"}/rplugin.vim" ]
-        ++ lib.optionals finalAttrs.wrapRc [ "--add-flags" "-u ${writeText "init.lua" rcContent}" ]
+        ++ lib.optionals finalAttrs.wrapRc [ "--add-flags" "-u ${finalLuaConfig}/init.lua" ]
         ++ generatedWrapperArgs;
 
       perlEnv = perl.withPackages (p: [ p.NeovimExt p.Appcpanminus ]);
@@ -94,7 +77,6 @@ let
       inherit withRuby rubyEnv;
       inherit withPerl perlEnv;
       inherit withPython3 python3Env;
-      luaRcContent = rcContent; # Why the rename?
       inherit wrapRc generatedWrapperArgs;
 
       postBuild = lib.optionalString stdenv.isLinux ''
