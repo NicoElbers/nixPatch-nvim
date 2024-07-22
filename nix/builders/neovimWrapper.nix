@@ -17,13 +17,12 @@ neovim-unwrapped:
 let
   lua = neovim-unwrapped.lua;
   wrapper = {
-    luaConfigFn
+    luaConfig
     , luaEnv
     , packpathDirs 
     , manifestRc
     , neovimRcContent
     , customSubs ? { }
-    , extraLuaConfig ? [] 
     , aliases ? null
     , extraName ? ""
     , withRuby ? false
@@ -40,9 +39,6 @@ let
   stdenv.mkDerivation (finalAttrs: 
     let
       rtp = (callPackage ./rtpBuilder.nix {}) neovim-unwrapped packpathDirs;
-
-      finalLuaConfig = luaConfigFn { inherit extraLuaConfig customSubs; };
-
 
       luaProviderRc = neovimUtils.generateProviderRc {
         inherit withPython3 withNodeJs withRuby withPerl;
@@ -63,7 +59,7 @@ let
       finalMakeWrapperArgs =
         [ "${neovim-unwrapped}/bin/nvim" "${placeholder "out"}/bin/${name}"]
         ++ [ "--set" "NVIM_SYSTEM_RPLUGIN_MANIFEST" "${placeholder "out"}/rplugin.vim" ]
-        ++ lib.optionals finalAttrs.wrapRc [ "--add-flags" "-u ${finalLuaConfig}/init.lua" ]
+        ++ lib.optionals finalAttrs.wrapRc [ "--add-flags" "-u ${luaConfig}/init.lua" ]
         ++ generatedWrapperArgs;
 
       wrapperArgsStr = if lib.isString wrapperArgs then wrapperArgs else lib.escapeShellArgs wrapperArgs;
@@ -186,7 +182,7 @@ let
           finalPackDir = rtp;
 
           unwrapped = neovim-unwrapped;
-          config = finalLuaConfig;
+          config = luaConfig;
       };
 
       meta = neovim-unwrapped.meta // {

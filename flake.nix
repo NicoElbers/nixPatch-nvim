@@ -185,17 +185,26 @@
   in 
   forEachSystem (system: 
   let
-    inherit (builders) baseBuilder;
+    inherit (builders) baseBuilder zigBuilder patcherBuilder;
     pkgs = nixpkgs.legacyPackages.${system}; # Get a copy of pkgs here for dev shells
 
-    # neovim-nightly = inputs.neovim-nightly-overlay.packages.${system}.neovim;
+    patcher = pkgs.callPackage zigBuilder {};
 
-    configWrapper = baseBuilder {
+    configPatcher = (pkgs.callPackage patcherBuilder {}) {
+      inherit nixpkgs patcher;
+      plugins = configuration.plugins or [];
+      customSubs = configuration.customSubs or [];
+    };
+
+    configWrapper = baseBuilder configPatcher {
       inherit nixpkgs system dependencyOverlays;
     };
   in {
-    packages = {
-      default = configWrapper { inherit configuration extra_pkg_config; };
+    packages = rec {
+      default = nv;
+      nv = configWrapper { inherit configuration extra_pkg_config; };
+
+      patcher = configPatcher { outPath = (placeholder "out"); };
     };
     devShells.default = with pkgs; mkShell {
       packages = [

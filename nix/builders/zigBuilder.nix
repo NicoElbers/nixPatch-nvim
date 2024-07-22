@@ -1,6 +1,6 @@
 { stdenvNoCC, zig }:
 stdenvNoCC.mkDerivation {
-  pname = "zig-config-patcher";
+  pname = "config-patcher";
   version = "0";
 
   src = ../../patcher;

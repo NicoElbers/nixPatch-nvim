@@ -1,3 +1,4 @@
+patcher:
 {
   # We require nixpkgs because the wrapper parses it later
   nixpkgs
@@ -5,7 +6,7 @@
   , dependencyOverlays
 }:
 # TODO: Get specialArgs to work
-{ configuration, specialArgs ? null, extra_pkg_config ? {}, extraLuaConfig ? [] }:
+{ configuration, specialArgs ? null, extra_pkg_config ? {} }:
 let
   utils = import ../utils;
 
@@ -20,8 +21,6 @@ let
         else [];
   } // { config = extra_pkg_config; });
   lib = pkgs.lib;
-  
-  nixpkgsOutPath = nixpkgs.outPath;
 
   rawconfiguration = configuration { inherit pkgs; };
 
@@ -41,6 +40,7 @@ let
     propagatedBuildInputs = [ ];
     sharedLibraries = [ ];
 
+    extraConfig = [ ];
     customSubs = [ ];
   } 
   // rawconfiguration;
@@ -65,7 +65,7 @@ let
   // { wrapRc = true; };
 
   inherit (finalConfiguration) 
-    luaPath plugins runtimeDeps 
+    luaPath plugins runtimeDeps extraConfig
     environmentVariables python3Packages 
     extraPython3WrapperArgs customSubs
     extraWrapperArgs sharedLibraries luaPackages;
@@ -118,13 +118,15 @@ let
   cfg_trimmed = builtins.removeAttrs cfg [ "extraPython3Packages" "extraLuaPackages"];
 
   # TODO: pass in zig version here
-  luaConfigFn = pkgs.callPackage ./configbuilder.nix { } {
-    inherit luaPath nixpkgsOutPath plugins name;
+  luaConfig = patcher {
+    inherit luaPath plugins name;
     inherit withNodeJs withPerl withPython3 withRuby;
+    inherit extraConfig customSubs;
   };
+
 in
 (pkgs.callPackage ./neovimWrapper.nix { }) neovim  (cfg_trimmed // {
-  inherit luaConfigFn extraLuaConfig;
+  inherit luaConfig;
   inherit wrapRc aliases extraName;
   inherit wrapperArgs customSubs;
 
