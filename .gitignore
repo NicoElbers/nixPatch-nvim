@@ -5,5 +5,5 @@
 result
 
 # Don't commit zig caches
-.zig-cache
-zig-out/**
+**/.zig-cache/**
+**/zig-out/**

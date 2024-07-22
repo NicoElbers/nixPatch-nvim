@@ -9,7 +9,7 @@ pub fn build(b: *std.Build) void {
     // Create exe
     const exe = b.addExecutable(.{
         .name = "config-patcher",
-        .root_source_file = b.path("src/main.zig"),
+        .root_source_file = b.path("patcher/src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -26,7 +26,7 @@ pub fn build(b: *std.Build) void {
 
     // Tests
     const exe_unit_tests = b.addTest(.{
-        .root_source_file = b.path("src/main.zig"),
+        .root_source_file = b.path("patcher/src/main.zig"),
         .target = target,
         .optimize = optimize,
     });

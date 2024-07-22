@@ -3,7 +3,7 @@ stdenvNoCC.mkDerivation {
   pname = "zig-config-patcher";
   version = "0";
 
-  src = ../..;
+  src = ../../patcher;
 
   nativeBuildInputs = [ zig ];
 
