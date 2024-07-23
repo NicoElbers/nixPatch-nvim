@@ -111,19 +111,7 @@ let
      else throw "extraWrapperArgs should be a string or list of strings"
     );
 
-  extraLuaPackages = utils.combineFns luaPackages;
-
   mappedPlugins = map (p: { plugin = p; optional = true; }) plugins;
-
-  cfg = pkgs.neovimUtils.makeNeovimConfig {
-    inherit withPython3 ;
-    inherit withNodeJs;
-    inherit withRuby;
-    inherit extraLuaPackages;
-    extraPython3Packages = extraPython3PackagesCombined;
-
-    plugins = mappedPlugins;
-  };
 
   packpathDirs.myNeovimPackages = 
       let
@@ -136,6 +124,8 @@ let
 
   getDeps = attrname: map (plugin: plugin.${attrname} or (_: [ ]));
 
+  # Evn implementations from 
+  # https://github.com/NixOS/nixpkgs/blob/748db8ec5cbae3c0bddf63845dc4de51ec6a68d9/pkgs/applications/editors/neovim/utils.nix#L26-L122
   extraPython3PackagesCombined = utils.combineFns python3Packages;
   pluginPython3Packages = getDeps "python3Dependencies" plugins;
   python3Env = pkgs.python3Packages.python.withPackages (ps:
@@ -158,15 +148,13 @@ let
     inherit extraConfig customSubs;
 
     inherit withNodeJs;
-    inherit withRuby ;
+    inherit withRuby rubyEnv;
     inherit withPerl perlEnv;
-    inherit withPython3 extraPython3WrapperArgs ;
-
-    inherit rubyEnv;
-    inherit python3Env;
+    inherit withPython3 python3Env extraPython3WrapperArgs ;
   };
 
-  # Copied from https://github.com/NixOS/nixpkgs/blob/3178439a4e764da70ca83f47bc144a2a276b2f0b/pkgs/applications/editors/vim/plugins/vim-utils.nix#L227-L277
+  # Copied from 
+  # https://github.com/NixOS/nixpkgs/blob/3178439a4e764da70ca83f47bc144a2a276b2f0b/pkgs/applications/editors/vim/plugins/vim-utils.nix#L227-L277
   manifestRc = ''
       set nocompatible
   '';
