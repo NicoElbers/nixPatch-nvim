@@ -123,6 +123,14 @@ let
     plugins = mappedPlugins;
   };
 
+  packpathDirs.myNeovimPackages = 
+      let
+      part = lib.partition (x: x.optional == true) mappedPlugins;
+      in 
+      {
+        start = map (x: x.plugin) part.wrong;
+        opt = map (x: x.plugin) part.right;
+      };
 
   perlEnv = pkgs.perl.withPackages (p: [ p.NeovimExt p.Appcpanminus ]);
 
@@ -143,6 +151,7 @@ let
       set nocompatible
   '';
 
+
 in
 (pkgs.callPackage ./neovimWrapper.nix {}) neovim {
     inherit luaConfig;
@@ -150,5 +159,5 @@ in
     inherit aliases;
     inherit name extraName;
     inherit manifestRc;
-    inherit (cfg) packpathDirs;
+    inherit packpathDirs;
 }
