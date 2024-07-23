@@ -86,12 +86,20 @@ let
     (lib.mapAttrsToList (n: v: [ "--set" "${n}" "${v}" ]) env);
  
   wrapperArgs = 
+    let
+      binPath = lib.makeBinPath (runtimeDeps
+        ++ lib.optionals withNodeJs 
+        [ pkgs.nodejs ]
+        ++ lib.optionals withRuby
+        [ pkgs.ruby ]);
+        
+    in 
     getEnv environmentVariables
     ++
     lib.optionals (configDirName != null && configDirName != "nvim")
     [ "--set" "NVIM_APPNAME" "${configDirName}" ]
     ++ lib.optionals (runtimeDeps != [])
-    [ "--${appendPathPos}" "PATH" ":" "${lib.makeBinPath runtimeDeps}" ]
+    [ "--${appendPathPos}" "PATH" ":" "${binPath}" ]
     ++ lib.optionals (sharedLibraries != [])
     [ "--${appendLinkPos}" "PATH" ":" "${lib.makeBinPath sharedLibraries}" ]
     ++
