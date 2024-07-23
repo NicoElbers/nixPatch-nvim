@@ -1,10 +1,5 @@
 { lib, stdenvNoCC, makeWrapper }:
-{
-  patcher
-  , nixpkgs
-  , plugins
-  , customSubs ? []
-}:
+{ patcher , nixpkgs }:
 {
   luaPath
   , plugins
@@ -22,14 +17,14 @@ let
   inputBlob = [(builtins.concatStringsSep ";"
     (builtins.map (plugin: "${plugin.pname}|${plugin.version}|${plugin}") plugins))];
 
-  inputBlobEscaped = builtins.trace (if inputBlob == [ "" ] then "t" else "f") (if inputBlob == [""] 
+  inputBlobEscaped = (if inputBlob == [""] 
     then "'a'"
     else lib.escapeShellArgs inputBlob);
 
   subBlob = [(builtins.concatStringsSep ";"
     (map (s: "${s.from}|${s.to}") customSubs))];
 
-  subBlobEscaped = builtins.trace (if subBlob == [ "" ] then "t" else "f") (if subBlob == [""] 
+  subBlobEscaped = (if subBlob == [""] 
     then "'b'"
     else lib.escapeShellArgs subBlob);
 

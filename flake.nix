@@ -4,10 +4,21 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
 
+    zig = {
+      url = "github:mitchellh/zig-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    zls = {
+      # Last commit on 0.13.0
+      url = "github:zigtools/zls?rev=a26718049a8657d4da04c331aeced1697bc7652b";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
   };
 
-  outputs = { nixpkgs, ... }@inputs: 
+  outputs = { nixpkgs, zig, zls, ... }@inputs: 
   let
     utils = (import ./nix/utils);
     forEachSystem = utils.eachSystem nixpkgs.lib.platforms.all;
@@ -192,8 +203,6 @@
 
     configPatcher = (pkgs.callPackage patcherBuilder {}) {
       inherit nixpkgs patcher;
-      plugins = configuration.plugins or [];
-      customSubs = configuration.customSubs or [];
     };
 
     configWrapper = baseBuilder configPatcher {
@@ -203,16 +212,16 @@
     packages = rec {
       default = nv;
       nv = configWrapper { inherit configuration extra_pkg_config; };
-
-      patcher = configPatcher { outPath = (placeholder "out"); };
     };
+
     devShells.default = with pkgs; mkShell {
       packages = [
-        zig
-        zls
+        zig.packages.${system}."0.13.0"
+        zls.packages.${system}.zls
         hello
       ];
     };
-  }); 
+  }) // {
+  };
 }
 
