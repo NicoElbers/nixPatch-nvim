@@ -115,23 +115,25 @@ let
     plugins = mappedPlugins;
   };
 
-  cfg_trimmed = builtins.removeAttrs cfg [ "extraPython3Packages" "extraLuaPackages"];
+  perlEnv = pkgs.perl.withPackages (p: [ p.NeovimExt p.Appcpanminus ]);
 
-  # TODO: pass in zig version here
   luaConfig = patcher {
     inherit luaPath plugins name;
-    inherit withNodeJs withPerl withPython3 withRuby;
     inherit extraConfig customSubs;
+
+    inherit withNodeJs;
+    inherit withRuby ;
+    inherit withPerl perlEnv;
+    inherit withPython3 extraPython3WrapperArgs ;
+
+    inherit (cfg) rubyEnv python3Env;
   };
 
 in
-(pkgs.callPackage ./neovimWrapper.nix { }) neovim  (cfg_trimmed // {
-  inherit luaConfig;
-  inherit wrapRc aliases extraName;
-  inherit wrapperArgs customSubs;
-
-  inherit withNodeJs withRuby withPerl withPython3; 
-  inherit extraPython3WrapperArgs; # TODO: conditionally unset pythonsafepath
-
-  inherit name;
-})
+(pkgs.callPackage ./neovimWrapper.nix {}) neovim {
+    inherit luaConfig;
+    inherit wrapRc wrapperArgs;
+    inherit aliases;
+    inherit name extraName;
+    inherit (cfg) packpathDirs manifestRc;
+}

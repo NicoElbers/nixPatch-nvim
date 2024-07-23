@@ -18,31 +18,17 @@ let
   lua = neovim-unwrapped.lua;
   wrapper = {
     luaConfig
-    , luaEnv
     , packpathDirs 
     , manifestRc
-    , neovimRcContent
-    , customSubs ? { }
     , aliases ? null
     , extraName ? ""
-    , withRuby ? false
-    , rubyEnv ? null
-    , withPython3 ? false
-    , python3Env ? python3
-    , withPerl ? false
-    , withNodeJs ? false
     , wrapRc ? true
     , wrapperArgs ? ""
-    , extraPython3WrapperArgs ? ""
     , name ? "nv"
   }:
   stdenv.mkDerivation (finalAttrs: 
     let
       rtp = (callPackage ./rtpBuilder.nix {}) neovim-unwrapped packpathDirs;
-
-      luaProviderRc = neovimUtils.generateProviderRc {
-        inherit withPython3 withNodeJs withRuby withPerl;
-      };
 
       shellCode = builtins.concatStringsSep "\n" ([/*bash*/''
         NVIM_WRAPPER_PATH_NIX="$(${coreutils}/bin/readlink -f "$0")"
@@ -50,11 +36,7 @@ let
       '']);
       preWrapperShellFile = writeText "preNVWrapperShellCode" shellCode;
 
-      perlEnv = perl.withPackages (p: [ p.NeovimExt p.Appcpanminus ]);
-
-      generatedWrapperArgs = 
-        ["--add-flags" ''--cmd "lua ${luaProviderRc}"'']
-        ++ [ "--set" "VIMRUNTIME" "${rtp}"];
+      generatedWrapperArgs = [ "--set" "VIMRUNTIME" "${rtp}"];
 
       finalMakeWrapperArgs =
         [ "${neovim-unwrapped}/bin/nvim" "${placeholder "out"}/bin/${name}"]
@@ -69,10 +51,6 @@ let
       __structuredAttrs = true;
       dontUnpack = true;
 
-      inherit withNodeJs;
-      inherit withRuby rubyEnv;
-      inherit withPerl perlEnv;
-      inherit withPython3 python3Env;
       inherit wrapRc generatedWrapperArgs;
 
       postBuild = lib.optionalString stdenv.isLinux ''
@@ -81,18 +59,6 @@ let
               --replace-fail 'Name=Neovim' 'Name=${name}'\
               --replace-fail 'TryExec=nvim' 'TryExec=${name}'\
               --replace-fail 'Exec=nvim %F' 'Exec=${name} %F'
-      ''
-      + lib.optionalString finalAttrs.withPython3 ''
-        makeWrapper ${python3Env.interpreter} $out/bin/${name}-python3 --unset PYTHONPATH ${builtins.concatStringsSep " " extraPython3WrapperArgs}
-      ''
-      + lib.optionalString finalAttrs.withRuby ''
-        ln -s ${finalAttrs.rubyEnv}/bin/neovim-ruby-host $out/bin/${name}-ruby
-      ''
-      + lib.optionalString finalAttrs.withNodeJs ''
-        ln -s ${nodePackages.neovim}/bin/neovim-node-host $out/bin/${name}-node
-      ''
-      + lib.optionalString finalAttrs.withPerl ''
-        ln -s ${perlEnv}/bin/perl $out/bin/${name}-perl
       ''
       + lib.optionalString (aliases != null)
       (builtins.concatStringsSep "\n" (builtins.map (alias: ''

@@ -1,15 +1,19 @@
-{ lib, stdenvNoCC, makeWrapper }:
+{ lib, stdenvNoCC, makeWrapper, callPackage }:
 { patcher , nixpkgs }:
 {
   luaPath
   , plugins
   , name
   , withNodeJs
-  , withPython3
   , withRuby
+  , rubyEnv ? null
   , withPerl
+  , perlEnv ? null
+  , withPython3
+  , python3Env ? null
+  , extraPython3WrapperArgs ? []
   , extraConfig ? []
-  , customSubs ? [ ] 
+  , customSubs ? [] 
 }:
 let
   nixpkgsOutPath = nixpkgs.outPath;
@@ -28,6 +32,14 @@ let
     then "'b'"
     else lib.escapeShellArgs subBlob);
 
+  providers = (callPackage ./providerBuilder.nix {}) {
+    inherit name;
+    inherit withNodeJs;
+    inherit withRuby rubyEnv;
+    inherit withPerl perlEnv;
+    inherit withPython3 python3Env extraPython3WrapperArgs;
+  };
+
   hostprog_check_table = {
     node = withNodeJs;
     python = false;
@@ -38,7 +50,7 @@ let
 
   genProviderCmd = prog: withProg: 
     if withProg 
-    then "vim.g.${prog}_host_prog='${placeholder "out"}/bin/${name}-${prog}'"
+    then "vim.g.${prog}_host_prog='${providers}/bin/${name}-${prog}'"
     else "vim.g.loaded_${prog}_provider=0";
 
   # TODO: pass these in as extra config later
