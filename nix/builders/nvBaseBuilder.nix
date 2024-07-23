@@ -143,6 +143,14 @@ let
     ++ (extraPython3PackagesCombined ps)
     ++ (lib.concatMap (f: f ps) pluginPython3Packages));
 
+  rubyEnv = pkgs.bundlerEnv {
+    name = "neovim-ruby-env";
+    gemdir = ./ruby_provider;
+    postBuild = ''
+      ln -sf ${pkgs.ruby}/bin/* $out/bin
+    '';
+  };
+
   perlEnv = pkgs.perl.withPackages (p: [ p.NeovimExt p.Appcpanminus ]);
 
   luaConfig = patcher {
@@ -154,7 +162,7 @@ let
     inherit withPerl perlEnv;
     inherit withPython3 extraPython3WrapperArgs ;
 
-    inherit (cfg) rubyEnv;
+    inherit rubyEnv;
     inherit python3Env;
   };
 
