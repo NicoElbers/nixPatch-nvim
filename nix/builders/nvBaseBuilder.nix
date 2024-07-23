@@ -123,6 +123,7 @@ let
     plugins = mappedPlugins;
   };
 
+
   perlEnv = pkgs.perl.withPackages (p: [ p.NeovimExt p.Appcpanminus ]);
 
   luaConfig = patcher {
@@ -137,11 +138,17 @@ let
     inherit (cfg) rubyEnv python3Env;
   };
 
+  # Copied from https://github.com/NixOS/nixpkgs/blob/3178439a4e764da70ca83f47bc144a2a276b2f0b/pkgs/applications/editors/vim/plugins/vim-utils.nix#L227-L277
+  manifestRc = ''
+      set nocompatible
+  '';
+
 in
 (pkgs.callPackage ./neovimWrapper.nix {}) neovim {
     inherit luaConfig;
     inherit wrapRc wrapperArgs;
     inherit aliases;
     inherit name extraName;
-    inherit (cfg) packpathDirs manifestRc;
+    inherit manifestRc;
+    inherit (cfg) packpathDirs;
 }
