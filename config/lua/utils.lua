@@ -33,6 +33,11 @@ function M.set(nonNix, nix)
     end
 end
 
+function M.is_loaded(name)
+    local Config = require("lazy.core.config")
+    return Config.plugins[name] and Config.plugins[name]._.loaded
+end
+
 function M.on_attach(client, bufnr)
     update_border()
 

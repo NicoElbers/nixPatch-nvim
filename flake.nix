@@ -70,8 +70,8 @@
         nvim-dap # rustaceanvim dep
 
         # treesitter
-        nvim-treesitter-textobjects
-        nvim-treesitter.withAllGrammars
+        # nvim-treesitter-textobjects
+        # nvim-treesitter.withAllGrammars
 
         # ui
         lualine-nvim

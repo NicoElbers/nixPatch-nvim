@@ -1,17 +1,54 @@
 local utils = require("utils")
 
 return {
-    "nvim-treesitter/nvim-treesitter",
-    dependencies = {
-        {
-            "nvim-treesitter/nvim-treesitter-textobjects",
+    {
+        "nvim-treesitter/nvim-treesitter",
+        dependencies = {
+            {
+                "nvim-treesitter/nvim-treesitter-textobjects",
+                lazy = true,
+            },
         },
-    },
-    build = utils.set(":TSUpdate"),
-    config = function()
-        vim.defer_fn(function()
-            local config = require("nvim-treesitter.configs")
-            config.setup({
+        enabled = false,
+
+        event = { "VeryLazy" },
+        -- event = { "BufReadPost", "BufNewFile", "BufWritePre", "VeryLazy" },
+        cmd = {
+            "TSBufDisable",
+            "TSBufEnable",
+            "TSBufToggle",
+            "TSDisable",
+            "TSEnable",
+            "TSToggle",
+            "TSInstall",
+            "TSInstallInfo",
+            "TSInstallSync",
+            "TSModuleInfo",
+            "TSUninstall",
+            "TSUpdate",
+            "TSUpdateSync",
+        },
+        keys = {
+            { "<c-space>", desc = "Increment Selection" },
+            { "<bs>", desc = "Decrement Selection", mode = "x" },
+        },
+
+        -- lazy = vim.fn.argc(-1) == 0,
+
+        init = function(plugin)
+            -- PERF: add nvim-treesitter queries to the rtp and it's custom query predicates early
+            -- This is needed because a bunch of plugins no longer `require("nvim-treesitter")`, which
+            -- no longer trigger the **nvim-treesitter** module to be loaded in time.
+            -- Luckily, the only things that those plugins need are the custom queries, which we make available
+            -- during startup.
+            require("lazy.core.loader").add_to_rtp(plugin)
+            require("nvim-treesitter.query_predicates")
+        end,
+
+        build = utils.set(":TSUpdate"),
+        config = function()
+            require("nvim-treesitter.configs").setup({
+                auto_install = utils.set(true, false),
                 highlight = {
                     enable = true,
                     disable = { "latex" },
@@ -62,6 +99,6 @@ return {
                     },
                 },
             })
-        end, 0)
-    end,
+        end,
+    },
 }
