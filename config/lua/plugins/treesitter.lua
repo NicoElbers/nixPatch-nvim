@@ -9,10 +9,9 @@ return {
                 lazy = true,
             },
         },
-        enabled = false,
+        -- enabled = false,
 
-        event = { "VeryLazy" },
-        -- event = { "BufReadPost", "BufNewFile", "BufWritePre", "VeryLazy" },
+        event = { "BufReadPost", "BufNewFile", "BufWritePre", "VeryLazy" },
         cmd = {
             "TSBufDisable",
             "TSBufEnable",
@@ -33,7 +32,7 @@ return {
             { "<bs>", desc = "Decrement Selection", mode = "x" },
         },
 
-        -- lazy = vim.fn.argc(-1) == 0,
+        lazy = vim.fn.argc(-1) == 0,
 
         init = function(plugin)
             -- PERF: add nvim-treesitter queries to the rtp and it's custom query predicates early

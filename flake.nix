@@ -81,8 +81,46 @@
         nvim-dap # rustaceanvim dep
 
         # treesitter
-        # nvim-treesitter-textobjects
-        # nvim-treesitter.withAllGrammars
+        nvim-treesitter-textobjects
+        (nvim-treesitter.withPlugins (
+          plugins: with plugins; [
+            asm
+            bash
+            bibtex
+            c
+            cpp
+            css
+            html
+            http
+            javascript
+            lua
+            make
+            markdown
+            markdown_inline
+            nix
+            python
+            rust
+            toml
+            typescript
+            vim
+            vimdoc
+            xml
+            yaml
+
+            comment
+            diff
+            git_config
+            git_rebase
+            gitcommit
+            gitignore
+            gpg
+            jq
+            json
+            json5
+            llvm
+            ssh_config
+          ]
+        ))
 
         # ui
         lualine-nvim
