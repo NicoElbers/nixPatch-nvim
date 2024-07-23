@@ -91,7 +91,9 @@ let
         ++ lib.optionals withNodeJs 
         [ pkgs.nodejs ]
         ++ lib.optionals withRuby
-        [ pkgs.ruby ]);
+        [ pkgs.ruby ]
+        ++ lib.optionals withPython3
+        [ pkgs.python3 ]);
         
     in 
     getEnv environmentVariables
@@ -109,16 +111,16 @@ let
      else throw "extraWrapperArgs should be a string or list of strings"
     );
 
-  extraPython3Packages = utils.combineFns python3Packages;
   extraLuaPackages = utils.combineFns luaPackages;
 
   mappedPlugins = map (p: { plugin = p; optional = true; }) plugins;
 
   cfg = pkgs.neovimUtils.makeNeovimConfig {
-    inherit withPython3 extraPython3Packages;
+    inherit withPython3 ;
     inherit withNodeJs;
     inherit withRuby;
     inherit extraLuaPackages;
+    extraPython3Packages = extraPython3PackagesCombined;
 
     plugins = mappedPlugins;
   };
@@ -132,6 +134,15 @@ let
         opt = map (x: x.plugin) part.right;
       };
 
+  getDeps = attrname: map (plugin: plugin.${attrname} or (_: [ ]));
+
+  extraPython3PackagesCombined = utils.combineFns python3Packages;
+  pluginPython3Packages = getDeps "python3Dependencies" plugins;
+  python3Env = pkgs.python3Packages.python.withPackages (ps:
+    [ ps.pynvim ]
+    ++ (extraPython3PackagesCombined ps)
+    ++ (lib.concatMap (f: f ps) pluginPython3Packages));
+
   perlEnv = pkgs.perl.withPackages (p: [ p.NeovimExt p.Appcpanminus ]);
 
   luaConfig = patcher {
@@ -143,7 +154,8 @@ let
     inherit withPerl perlEnv;
     inherit withPython3 extraPython3WrapperArgs ;
 
-    inherit (cfg) rubyEnv python3Env;
+    inherit (cfg) rubyEnv;
+    inherit python3Env;
   };
 
   # Copied from https://github.com/NixOS/nixpkgs/blob/3178439a4e764da70ca83f47bc144a2a276b2f0b/pkgs/applications/editors/vim/plugins/vim-utils.nix#L227-L277
