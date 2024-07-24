@@ -214,21 +214,6 @@ fn parseLuaFile(alloc: Allocator, input_buf: []const u8, subs: []const Substitut
             std.log.debug("No more subs in this file...", .{});
             try out_arr.appendSlice(iter.rest() orelse "");
         }
-
-        // if (chosen_sub == null) {
-        //     // TODO: Move this out the loop pls
-        //     std.log.debug("No more subs in this file...", .{});
-        //     try out_arr.appendSlice(iter.rest() orelse "");
-        // } else {
-        //     std.log.debug("Sub {s} -> {s}", .{ chosen_sub.?.from, chosen_sub.?.to });
-        //     std.log.debug("Add  {s}", .{chosen_sub.?.pname});
-        //     try out_arr.appendSlice(chosen_skipped.?);
-        //     try out_arr.appendSlice(chosen_sub.?.to);
-        //     try out_arr.appendSlice(",\n");
-        //     try out_arr.appendSlice(chosen_sub.?.pname);
-        //     iter.ptr += chosen_skipped.?.len;
-        //     iter.ptr += chosen_sub.?.from.len;
-        // }
     }
 
     return out_arr.toOwnedSlice();
