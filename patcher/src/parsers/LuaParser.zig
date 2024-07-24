@@ -72,11 +72,8 @@ pub fn deinit(self: *Self) void {
 pub fn createConfig(self: Self, plugins: []const Plugin, subs_blob: []const u8) !void {
     const subs = blk: {
         var subs_arr = std.ArrayList(Substitution).init(self.alloc);
-        std.debug.print("###### BEFORE PARSING BLOB #########", .{});
         try appendFromBlob(self.alloc, subs_blob, &subs_arr);
-        std.debug.print("###### AFTER PARSING BLOB #########", .{});
         try subsFromPlugins(self.alloc, plugins, &subs_arr);
-        std.debug.print("###### AFTER PARSING PLUGINS #########", .{});
         break :blk try subs_arr.toOwnedSlice();
     };
     defer {
