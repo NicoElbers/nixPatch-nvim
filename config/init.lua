@@ -25,4 +25,4 @@ end)
 
 load_lazy()
 
-require("lazy").setup("plugins")
+require("lazy").setup("plugins", { rocks = { enabled = false } })
