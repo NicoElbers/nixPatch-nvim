@@ -129,12 +129,31 @@ pub fn nextLuaStringKeyPos(self: Self, key: []const u8) ?usize {
     }
 }
 
-fn isWhitespace(char: u8) bool {
-    return char == ' ' or char == '\t';
+pub fn nextUntilBefore(self: *Self, until: []const u8) ?[]const u8 {
+    if ((self.ptr + until.len) >= self.buf.len) return null;
+
+    for ((self.ptr)..(self.buf.len - until.len + 1)) |ptr| {
+        if (!std.mem.eql(u8, self.buf[ptr..(ptr + until.len)], until))
+            continue;
+
+        defer self.ptr = ptr + 1;
+        return self.buf[self.ptr..ptr];
+    }
+    return self.rest();
 }
 
-fn skipAfterLuaString(self: *Self) ?void {
+pub fn skipAfterLuaString(self: *Self) ?void {
     self.ptr = self.findLuaStringClosingAfter() orelse return null;
+}
+
+pub fn rest(self: *Self) ?[]const u8 {
+    if (self.isDone()) return null;
+    defer self.ptr = self.buf.len;
+    return self.buf[self.ptr..];
+}
+
+fn isWhitespace(char: u8) bool {
+    return char == ' ' or char == '\t';
 }
 
 fn findLuaStringOpeningOn(self: Self) ?usize {
@@ -390,4 +409,40 @@ test "findLuaStringOpening normal" {
     var iter = init(in);
     try expectEqual(0, iter.findLuaStringOpeningOn().?);
     try expectEqual(1, iter.findLuaStringOpeningAfter().?);
+}
+
+test "nextUntilBefore single char" {
+    const in = "hello|world|";
+    var iter = init(in);
+    try expectEqualStrings("hello", iter.nextUntilBefore("|").?);
+    try expectEqualStrings("world", iter.nextUntilBefore("|").?);
+    try expectEqual(null, iter.nextUntilBefore("|"));
+}
+
+test "nextUntilBefore rest" {
+    const in = "hello|world";
+    var iter = init(in);
+    try expectEqualStrings("hello", iter.nextUntilBefore("|").?);
+    try expectEqualStrings("world", iter.nextUntilBefore("|").?);
+    try expectEqual(null, iter.nextUntilBefore("|"));
+}
+
+test "nextUntilBefore multi char" {
+    const in = "hello|world|||";
+    var iter = init(in);
+    try expectEqualStrings("hello|world", iter.nextUntilBefore("|||").?);
+    try expectEqual(null, iter.nextUntilBefore("|||"));
+}
+
+test "nextUntilBefore not present" {
+    const in = "hello|world";
+    var iter = init(in);
+    try expectEqualStrings("hello|world", iter.nextUntilBefore("||").?);
+    try expectEqual(null, iter.nextUntilBefore("||"));
+}
+
+test "nextUntilBefore larger than str" {
+    const in = "-";
+    var iter = init(in);
+    try expectEqual(null, iter.nextUntilBefore("||"));
 }
