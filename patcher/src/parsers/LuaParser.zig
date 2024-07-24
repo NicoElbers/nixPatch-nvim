@@ -53,8 +53,32 @@ pub fn deinit(self: *Self) void {
 /// iterates over the input directory recursively. It copies non lua files
 /// directly and parses lua files for substitutions before copying the parsed
 /// files over.
-pub fn createConfig(self: Self, plugins: []const Plugin, sub_arr: *std.ArrayList(Substitution)) !void {
-    const subs = try createSubsitutions(self.alloc, plugins, sub_arr);
+///
+// TODO:
+// IDEA: Give substitutions types.
+//   -> A type for github URLS which looks for
+//       url = ${String of {url}}
+//       ${String of {url}}
+//       url = ${String of {short_url}}
+//       ${String of {short_url}}
+//   -> A type for normal URLs
+//       url = ${String of {url}}
+//       ${String of {url}}
+//   -> A type for string replacement
+//       ${String of {given}}
+//   -> A type for general replacement
+//       {given}
+// Here ${String of {x}} means `"x"` `'x'` or `[[x]]`
+pub fn createConfig(self: Self, plugins: []const Plugin, subs_blob: []const u8) !void {
+    const subs = blk: {
+        var subs_arr = std.ArrayList(Substitution).init(self.alloc);
+        std.debug.print("###### BEFORE PARSING BLOB #########", .{});
+        try appendFromBlob(self.alloc, subs_blob, &subs_arr);
+        std.debug.print("###### AFTER PARSING BLOB #########", .{});
+        try subsFromPlugins(self.alloc, plugins, &subs_arr);
+        std.debug.print("###### AFTER PARSING PLUGINS #########", .{});
+        break :blk try subs_arr.toOwnedSlice();
+    };
     defer {
         for (subs) |sub| {
             sub.deinit(self.alloc);
@@ -106,12 +130,32 @@ pub fn createConfig(self: Self, plugins: []const Plugin, sub_arr: *std.ArrayList
     }
 }
 
-fn createSubsitutions(alloc: Allocator, plugins: []const Plugin, subs: *std.ArrayList(Substitution)) ![]Substitution {
+/// Memory owned by out
+fn appendFromBlob(alloc: Allocator, subs_blob: []const u8, out: *std.ArrayList(Substitution)) !void {
+    var iter = utils.BufIter{ .buf = subs_blob };
+
+    // TODO: Is this ok? Ask someone with more experience
+    if (subs_blob.len < 3) {
+        return;
+    }
+
+    while (!iter.isDone()) {
+        const from = iter.nextUntilExcluding("|").?;
+        const to = iter.nextUntilExcluding(";") orelse iter.rest() orelse return error.BadSub;
+        try out.append(Substitution{
+            .from = try alloc.dupe(u8, from),
+            .to = try alloc.dupe(u8, to),
+        });
+    }
+}
+
+/// Memory owned by caller
+fn subsFromPlugins(alloc: Allocator, plugins: []const Plugin, out: *std.ArrayList(Substitution)) !void {
     for (plugins) |plugin| {
         switch (plugin.tag) {
             .UrlNotFound => continue,
             .GitUrl => {
-                try subs.append(try Substitution.initUrlSub(
+                try out.append(try Substitution.initUrlSub(
                     alloc,
                     plugin.url,
                     plugin.path,
@@ -119,7 +163,7 @@ fn createSubsitutions(alloc: Allocator, plugins: []const Plugin, subs: *std.Arra
                 ));
             },
             .GithubUrl => {
-                try subs.append(try Substitution.initUrlSub(
+                try out.append(try Substitution.initUrlSub(
                     alloc,
                     plugin.url,
                     plugin.path,
@@ -130,7 +174,7 @@ fn createSubsitutions(alloc: Allocator, plugins: []const Plugin, subs: *std.Arra
                 _ = url_splitter.next().?;
                 const short_url = url_splitter.rest();
 
-                try subs.append(try Substitution.initUrlSub(
+                try out.append(try Substitution.initUrlSub(
                     alloc,
                     short_url,
                     plugin.path,
@@ -139,8 +183,6 @@ fn createSubsitutions(alloc: Allocator, plugins: []const Plugin, subs: *std.Arra
             },
         }
     }
-
-    return try subs.toOwnedSlice();
 }
 
 // Good example of url usage:

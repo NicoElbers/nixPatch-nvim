@@ -11,6 +11,8 @@ const Substitution = util.Substitution;
 
 const Allocator = std.mem.Allocator;
 
+pub const log_level: std.log.Level = .info;
+
 pub fn main() !void {
     // var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     // defer arena.deinit();
@@ -60,10 +62,6 @@ pub fn main() !void {
         alloc.free(plugins);
     }
 
-    // Extra subs
-    // TODO: Very ugly, pls fix
-    var extra_sub_arr = try getSubs(alloc, extra_subs);
-
     // Create config
     var lua_parser = try LuaParser.init(
         alloc,
@@ -73,7 +71,7 @@ pub fn main() !void {
     );
     defer lua_parser.deinit();
 
-    try lua_parser.createConfig(plugins, &extra_sub_arr);
+    try lua_parser.createConfig(plugins, extra_subs);
 }
 
 fn getPlugins(alloc: Allocator, nixpkgs_path: []const u8, input_blob: []const u8) ![]const Plugin {
@@ -98,26 +96,6 @@ fn getPlugins(alloc: Allocator, nixpkgs_path: []const u8, input_blob: []const u8
     defer input_parser.deinit();
 
     return try input_parser.parseInput(input_blob);
-}
-
-fn getSubs(alloc: Allocator, extra_subs: []const u8) !std.ArrayList(Substitution) {
-    var iter = util.BufIter{ .buf = extra_subs };
-    var sub_arr = std.ArrayList(Substitution).init(alloc);
-    errdefer sub_arr.deinit();
-
-    if (extra_subs.len < 3) {
-        return sub_arr;
-    }
-
-    while (!iter.isDone()) {
-        const from = iter.nextUntilExcluding("|").?;
-        const to = iter.nextUntilExcluding(";") orelse iter.rest() orelse return error.BadSub;
-        try sub_arr.append(Substitution{
-            .from = try alloc.dupe(u8, from),
-            .to = try alloc.dupe(u8, to),
-        });
-    }
-    return sub_arr;
 }
 
 test {
