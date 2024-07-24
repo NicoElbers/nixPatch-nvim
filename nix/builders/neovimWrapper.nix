@@ -36,7 +36,7 @@ let
       '']);
       preWrapperShellFile = writeText "preNVWrapperShellCode" shellCode;
 
-      generatedWrapperArgs = [ "--set" "VIMRUNTIME" "${rtp}"];
+      generatedWrapperArgs = [ "--set" "VIMRUNTIME" "${rtp}" ];
 
       finalMakeWrapperArgs =
         [ "${neovim-unwrapped}/bin/nvim" "${placeholder "out"}/bin/${name}"]
@@ -143,7 +143,6 @@ let
       preferLocalBuild = true;
       nativeBuildInputs = [ makeWrapper lndir ];
 
-      # TODO: potentially add passtru
       passthru = {
           finalPackDir = rtp;
 

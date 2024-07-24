@@ -79,10 +79,11 @@ packDir = packages:
         ln -s ${python3Env}/${python3Env.sitePackages} $out/pack/${packageName}/start/__python3_dependencies/python3
       '';
     in
-      [ (neovim-unwrapped + "/share/nvim/runtime") packdirStart packdirOpt ] ++ lib.optional (allPython3Dependencies python3.pkgs != []) python3link;
+      [ (neovim-unwrapped + "/share/nvim/runtime") packdirStart packdirOpt ] 
+      ++ lib.optional (allPython3Dependencies python3.pkgs != []) python3link;
   in
   buildEnv {
-    name = "vim-pack-dir";
+    name = "nv-rtp";
     paths = (lib.flatten (lib.mapAttrsToList packageLinks packages));
     # gather all propagated build inputs from packDir
     postBuild = ''
