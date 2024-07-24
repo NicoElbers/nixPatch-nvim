@@ -113,7 +113,7 @@ let
 
   mappedPlugins = map (p: { plugin = p; optional = true; }) plugins;
 
-  packpathDirs.myNeovimPackages = 
+  packpathDirs.packages = 
       let
       part = lib.partition (x: x.optional == true) mappedPlugins;
       in 
