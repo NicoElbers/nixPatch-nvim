@@ -89,19 +89,6 @@ stdenvNoCC.mkDerivation {
   dontInstall = true;
 
   buildPhase = /* bash */ ''
-  echo "${nixpkgsOutPath}"
-  echo "###############"
-  echo "$(pwd)" 
-  echo "###############"
-  echo "$out"
-  echo "###############"
-  echo "${inputBlobEscaped}"
-  echo "###############"
-  echo "${subBlobEscaped}"
-  echo "###############"
-  echo "${finalExtraConfigEscaped}"
-  echo "###############"
-
   ${lib.getExe patcher} \
     ${nixpkgsOutPath} \
     $(pwd) \
