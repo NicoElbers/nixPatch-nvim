@@ -102,4 +102,5 @@ test {
     _ = @import("parsers/InputParser.zig");
     _ = @import("parsers/LuaParser.zig");
     _ = @import("utils.zig");
+    _ = @import("parsers/BufIter.zig");
 }
