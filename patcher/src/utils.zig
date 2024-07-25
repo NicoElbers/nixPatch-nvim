@@ -39,8 +39,15 @@ pub const Plugin = struct {
 pub const Substitution = struct {
     from: []const u8,
     to: []const u8,
+    tag: Tag,
 
-    const Tag = enum { url, githubShort };
+    const Tag = union(enum) {
+        /// Extra data is the pname
+        url: []const u8,
+        /// Extra data is the key
+        string: ?[]const u8,
+        raw,
+    };
 
     pub fn initUrlSub(
         alloc: Allocator,
@@ -49,19 +56,44 @@ pub const Substitution = struct {
         pname: []const u8,
     ) !Substitution {
         return Substitution{
-            .from = try std.fmt.allocPrint(alloc, "\"{s}\"", .{from}),
-            .to = try std.fmt.allocPrint(
-                alloc,
-                \\dir = [[{s}]],
-                \\name = [[{s}]]
-            ,
-                .{ to, pname },
-            ),
+            .from = try alloc.dupe(u8, from),
+            .to = try alloc.dupe(u8, to),
+            .tag = .{ .url = try alloc.dupe(u8, pname) },
         };
     }
+
+    pub fn initStringSub(
+        alloc: Allocator,
+        from: []const u8,
+        to: []const u8,
+        key: ?[]const u8,
+    ) !Substitution {
+        return Substitution{
+            .from = try alloc.dupe(u8, from),
+            .to = try alloc.dupe(u8, to),
+            .tag = .{ .string = if (key) |k| try alloc.dupe(u8, k) else null },
+        };
+    }
+
     pub fn deinit(self: Substitution, alloc: Allocator) void {
         alloc.free(self.to);
         alloc.free(self.from);
+        switch (self.tag) {
+            .raw => {},
+            .url => |pname| alloc.free(pname),
+            .string => |key| {
+                if (key) |k| {
+                    alloc.free(k);
+                }
+            },
+        }
+    }
+
+    pub fn deinitSubs(slice: []Substitution, alloc: Allocator) void {
+        for (slice) |sub| {
+            sub.deinit(alloc);
+        }
+        alloc.free(slice);
     }
 };
 

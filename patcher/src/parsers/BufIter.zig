@@ -1,5 +1,7 @@
 const std = @import("std");
 const mem = std.mem;
+// TODO: Assert a bunch of shit
+const assert = std.debug.assert;
 
 const Self = @This();
 
@@ -58,32 +60,14 @@ pub fn peekNextLuaString(self: Self) ?[]const u8 {
     return self.buf[start..stop];
 }
 
-/// Returns the index before the next lua string
+/// Returns the slice before the next lua string
 ///    "String"
 ///    ^
-///   This is returned
-pub fn nextLuaStringStartIdx(self: Self) ?usize {
+///   Until this is returned
+pub fn peekNextUntilLuaString(self: Self) ?[]const u8 {
     if (self.isDone()) return null;
-
-    var iter = init(self.buf[self.ptr..]);
-
-    while (iter.next()) |char| {
-        if (char == '\'') break;
-
-        if (char == '"') break;
-
-        if (char == '[' and
-            iter.peek() != null and iter.peek() == '[')
-        {
-            break;
-        }
-    }
-
-    if (iter.isDone()) {
-        return null;
-    } else {
-        return iter.ptr;
-    }
+    const string_start = self.findLuaStringOpeningOn() orelse return null;
+    return self.buf[self.ptr..string_start];
 }
 
 /// This function is equal to the following:
@@ -94,13 +78,13 @@ pub fn nextLuaStringStartIdx(self: Self) ?usize {
 ///   =        is the literal character,
 ///   {string} is the lua string,
 ///
-/// It returns the ptr to the first character of the key
-pub fn nextLuaStringKeyPos(self: Self, key: []const u8) ?usize {
-    const string_start = self.nextLuaStringStartIdx() orelse return null;
+/// It returns a slice from self.ptr to the first character of the key
+pub fn peekUntilNextLuaStringKey(self: Self, key: []const u8) ?[]const u8 {
+    const before_string = self.peekNextUntilLuaString() orelse return null;
 
-    if (string_start <= key.len) return null;
+    if (before_string.len <= key.len) return null;
 
-    var iter = initBack(self.buf[self.ptr..(string_start - 1)]);
+    var iter = initBack(before_string);
     while (iter.back()) |char| {
         if (isWhitespace(char)) continue;
         if (char == '=') break;
@@ -114,41 +98,70 @@ pub fn nextLuaStringKeyPos(self: Self, key: []const u8) ?usize {
     while (iter.back()) |char| {
         if (isWhitespace(char)) continue;
         if (char != last_key_char) return null;
+
+        // Make sure to include the end char
+        _ = iter.next();
         break;
     }
-
-    // Make sure to include the end char
-    _ = iter.next();
 
     if (iter.ptr >= key.len and
         mem.eql(u8, key, iter.buf[(iter.ptr - key.len)..iter.ptr]))
     {
-        return iter.ptr - key.len;
+        return iter.buf[0..(iter.ptr - key.len)];
     } else {
         return null;
     }
 }
-
 pub fn nextUntilBefore(self: *Self, until: []const u8) ?[]const u8 {
+    const str = self.peekUntilBefore(until) orelse return null;
+    self.ptr += str.len;
+    return str;
+}
+
+pub fn peekUntilBefore(self: Self, until: []const u8) ?[]const u8 {
     if ((self.ptr + until.len) >= self.buf.len) return null;
 
     for ((self.ptr)..(self.buf.len - until.len + 1)) |ptr| {
         if (!std.mem.eql(u8, self.buf[ptr..(ptr + until.len)], until))
             continue;
 
-        defer self.ptr = ptr + 1;
         return self.buf[self.ptr..ptr];
     }
-    return self.rest();
+    return null;
 }
 
-pub fn skipAfterLuaString(self: *Self) ?void {
-    self.ptr = self.findLuaStringClosingAfter() orelse return null;
+pub fn nextUntilAfter(self: *Self, until: []const u8) ?[]const u8 {
+    const str = self.peekUntilAfter(until) orelse return null;
+    self.ptr += str.len;
+    return str;
+}
+
+pub fn peekUntilAfter(self: Self, until: []const u8) ?[]const u8 {
+    if ((self.ptr + until.len) >= self.buf.len) return null;
+
+    for ((self.ptr)..(self.buf.len - until.len + 1)) |ptr| {
+        if (!std.mem.eql(u8, self.buf[ptr..(ptr + until.len)], until))
+            continue;
+
+        return self.buf[self.ptr..(ptr + until.len)];
+    }
+    return null;
+}
+
+pub fn nextUntilAfterLuaString(self: *Self) ?[]const u8 {
+    const end_ptr = self.findLuaStringClosingAfter() orelse return null;
+    defer self.ptr = end_ptr;
+    return self.buf[self.ptr..end_ptr];
 }
 
 pub fn rest(self: *Self) ?[]const u8 {
     if (self.isDone()) return null;
     defer self.ptr = self.buf.len;
+    return self.buf[self.ptr..];
+}
+
+pub fn peekRest(self: *Self) ?[]const u8 {
+    if (self.isDone()) return null;
     return self.buf[self.ptr..];
 }
 
@@ -318,68 +331,68 @@ test "nextLuaString first char" {
 test "nextLuaStringHasKey no key" {
     const in = "[[hello]]";
     var iter = init(in);
-    try expectEqual(null, iter.nextLuaStringKeyPos("some-key"));
+    try expectEqual(null, iter.peekUntilNextLuaStringKey("some-key"));
 }
 
 test "nextLuaStringHasKey wrong key" {
     const in = "some-key = [[hello]]";
     var iter = init(in);
-    try expectEqual(null, iter.nextLuaStringKeyPos("other-key"));
+    try expectEqual(null, iter.peekUntilNextLuaStringKey("other-key"));
 }
 
 test "nextLuaStringHasKey right key" {
     const in = "some-key = [[hello]]";
     var iter = init(in);
-    try expectEqual(0, iter.nextLuaStringKeyPos("some-key"));
+    try expectEqualStrings("", iter.peekUntilNextLuaStringKey("some-key").?);
 }
 
 test "nextLuaStringHasKey no whitespace" {
     const in = "some-key=[[hello]]";
     var iter = init(in);
-    try expectEqual(0, iter.nextLuaStringKeyPos("some-key"));
+    try expectEqualStrings("", iter.peekUntilNextLuaStringKey("some-key").?);
 }
 
 test "nextLuaStringHasKey lost of whitespace" {
     const in = "   some-key    =       [[hello]]";
     var iter = init(in);
-    try expectEqual(3, iter.nextLuaStringKeyPos("some-key"));
+    try expectEqualStrings("   ", iter.peekUntilNextLuaStringKey("some-key").?);
 }
 
 test "nextLuaStringHasKey newline after =" {
     const in = "some-key =\n [[hello]]";
     var iter = init(in);
-    try expectEqual(null, iter.nextLuaStringKeyPos("some-key"));
+    try expectEqual(null, iter.peekUntilNextLuaStringKey("some-key"));
 }
 
 test "nextLuaStringHasKey newline before =" {
     const in = "some-key\n = [[hello]]";
     var iter = init(in);
-    try expectEqual(null, iter.nextLuaStringKeyPos("some-key"));
+    try expectEqual(null, iter.peekUntilNextLuaStringKey("some-key"));
 }
 
 test "nextLuaStringHasKey key obstructed" {
     const in = "some-key, = [[hello]]";
     var iter = init(in);
-    try expectEqual(null, iter.nextLuaStringKeyPos("some-key"));
+    try expectEqual(null, iter.peekUntilNextLuaStringKey("some-key"));
 }
 
 test "nextLuaStringHasKey no string" {
     const in = "garbage garbage";
     var iter = init(in);
-    try expectEqual(null, iter.nextLuaStringKeyPos("some-key"));
+    try expectEqual(null, iter.peekUntilNextLuaStringKey("some-key"));
 }
 
 test "skipAfterLuaString" {
     const in = "garbage[[hello]]x";
     var iter = init(in);
-    try expect(iter.skipAfterLuaString() != null);
+    try expect(iter.nextUntilAfterLuaString() != null);
     try expectEqual('x', iter.next());
 }
 
 test "string after skip" {
     const in = "[[Hello]] 'world'";
     var iter = init(in);
-    try expect(iter.skipAfterLuaString() != null);
+    try expect(iter.nextUntilAfterLuaString() != null);
     try expectEqualStrings("world", iter.peekNextLuaString().?);
 }
 
@@ -415,7 +428,10 @@ test "nextUntilBefore single char" {
     const in = "hello|world|";
     var iter = init(in);
     try expectEqualStrings("hello", iter.nextUntilBefore("|").?);
+    try expectEqual('|', iter.next().?);
     try expectEqualStrings("world", iter.nextUntilBefore("|").?);
+    try expectEqual('|', iter.next().?);
+
     try expectEqual(null, iter.nextUntilBefore("|"));
 }
 
@@ -423,7 +439,7 @@ test "nextUntilBefore rest" {
     const in = "hello|world";
     var iter = init(in);
     try expectEqualStrings("hello", iter.nextUntilBefore("|").?);
-    try expectEqualStrings("world", iter.nextUntilBefore("|").?);
+    try expectEqual('|', iter.next().?);
     try expectEqual(null, iter.nextUntilBefore("|"));
 }
 
@@ -437,7 +453,6 @@ test "nextUntilBefore multi char" {
 test "nextUntilBefore not present" {
     const in = "hello|world";
     var iter = init(in);
-    try expectEqualStrings("hello|world", iter.nextUntilBefore("||").?);
     try expectEqual(null, iter.nextUntilBefore("||"));
 }
 

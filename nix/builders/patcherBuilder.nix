@@ -21,15 +21,24 @@ let
   inputBlob = [(builtins.concatStringsSep ";"
     (builtins.map (plugin: "${plugin.pname}|${plugin.version}|${plugin}") plugins))];
 
+  # TODO: is this needed?
   inputBlobEscaped = (if inputBlob == [""] 
-    then "'a'"
+    then "-"
     else lib.escapeShellArgs inputBlob);
 
-  subBlob = [(builtins.concatStringsSep ";"
-    (map (s: "${s.from}|${s.to}") customSubs))];
+  subToBlobItem = s: 
+    let
+      type = if s ? type then s.type else "string";
+      extra = if s ? extra then s.extra else "-";
+    in 
+      "${type}|${s.from}|${s.to}|${extra}";
 
+  subBlob = [(builtins.concatStringsSep ";"
+    (map subToBlobItem customSubs))];
+
+  # TODO: is this needed?
   subBlobEscaped = (if subBlob == [""] 
-    then "'b'"
+    then "-"
     else lib.escapeShellArgs subBlob);
 
   providers = (callPackage ./providerBuilder.nix {}) {
@@ -95,6 +104,6 @@ stdenvNoCC.mkDerivation {
     $out \
     ${inputBlobEscaped} \
     ${subBlobEscaped} \
-    ${finalExtraConfigEscaped} 
+    ${finalExtraConfigEscaped}
   '';
 }
