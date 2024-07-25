@@ -662,6 +662,5 @@ test "cmp-nvim-lsp failing in config" {
     const out_buf = try parseLuaFile(alloc, in, subs);
     defer alloc.free(out_buf);
 
-    _ = expected;
-    // try std.testing.expectEqualStrings(expected, out_buf);
+    try std.testing.expectEqualStrings(expected, out_buf);
 }
