@@ -20,7 +20,7 @@ local load_lazy = utils.set(function()
     vim.opt.rtp:prepend(lazypath)
 end, function()
     -- Short URL will be replaced
-    vim.opt.rtp:prepend([[lazypath]])
+    vim.opt.rtp:prepend([[lazy.nvim-plugin-path]])
 end)
 
 load_lazy()
