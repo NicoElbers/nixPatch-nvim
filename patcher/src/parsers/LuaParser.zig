@@ -54,72 +54,7 @@ pub fn deinit(self: *Self) void {
 /// iterates over the input directory recursively. It copies non lua files
 /// directly and parses lua files for substitutions before copying the parsed
 /// files over.
-///
-// TODO:
-// IDEA: Give substitutions types.
-//   -> A type for github URLS which looks for
-//       url = ${String of {url}}
-//       ${String of {url}}
-//       url = ${String of {short_url}}
-//       ${String of {short_url}}
-//   -> A type for normal URLs
-//       url = ${String of {url}}
-//       ${String of {url}}
-//   -> A type for string replacement
-//       ${String of {given}}
-//   -> A type for general replacement
-//       {given}
-// Here ${String of {x}} means `"x"` `'x'` or `[[x]]`
-pub fn createConfig(self: Self, plugins: []const Plugin, subs_blob: []const u8) !void {
-    const subs = blk: {
-        var subs_arr = std.ArrayList(Substitution).init(self.alloc);
-        errdefer {
-            for (subs_arr.items) |sub| {
-                sub.deinit(self.alloc);
-            }
-            subs_arr.deinit();
-        }
-
-        try subsFromBlob(self.alloc, subs_blob, &subs_arr);
-        try subsFromPlugins(self.alloc, plugins, &subs_arr);
-        break :blk try subs_arr.toOwnedSlice();
-    };
-    defer {
-        for (subs) |sub| {
-            sub.deinit(self.alloc);
-        }
-        self.alloc.free(subs);
-    }
-
-    // pretty print all subs for debugging
-    // for (subs) |sub| {
-    //     std.debug.print("\n", .{});
-    //     switch (sub.tag) {
-    //         .url => |pname| {
-    //             std.debug.print(
-    //                 \\try Substitution.initUrlSub(
-    //                 \\    alloc,
-    //                 \\    "{s}",
-    //                 \\    "{s}",
-    //                 \\    "{s}",
-    //                 \\),
-    //             , .{ sub.from, sub.to, pname });
-    //         },
-    //         .string => |_| {
-    //             unreachable;
-    //         },
-    //         .raw => {
-    //             std.debug.print(
-    //                 \\try Substitution.initRawSub(
-    //                 \\    alloc,
-    //                 \\    "{s}",
-    //                 \\    "{s}",
-    //                 \\),
-    //             , .{ sub.from, sub.to });
-    //         },
-    //     }
-    // }
-
+pub fn createConfig(self: Self, subs: []const Substitution) !void {
     // FIXME: Create a look that asserts subs.to are all unique
     var walker = try self.in_dir.walk(self.alloc);
     defer walker.deinit();
@@ -318,6 +253,7 @@ fn parseLuaFile(alloc: Allocator, input_buf: []const u8, subs: []const Substitut
     return out_arr.toOwnedSlice();
 }
 
+// TODO: Make a test folder for this shit
 test "parseLuaFile copy" {
     const alloc = std.testing.allocator;
     const input_buf = "Hello world";

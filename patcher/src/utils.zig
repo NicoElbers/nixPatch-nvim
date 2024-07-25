@@ -34,6 +34,13 @@ pub const Plugin = struct {
 
         alloc.free(self.url);
     }
+
+    pub fn deinitPlugins(slice: []const Plugin, alloc: Allocator) void {
+        for (slice) |plugin| {
+            plugin.deinit(alloc);
+        }
+        alloc.free(slice);
+    }
 };
 
 pub const Substitution = struct {
@@ -89,7 +96,7 @@ pub const Substitution = struct {
         }
     }
 
-    pub fn deinitSubs(slice: []Substitution, alloc: Allocator) void {
+    pub fn deinitSubs(slice: []const Substitution, alloc: Allocator) void {
         for (slice) |sub| {
             sub.deinit(alloc);
         }
