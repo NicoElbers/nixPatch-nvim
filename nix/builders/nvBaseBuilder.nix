@@ -50,12 +50,10 @@ let
     withPython3 = false;
     extraName = "";
     configDirName = "nvim";
-    aliases = null;
     neovim-unwrapped = null;
     patchSubs = true;
     suffix-path = false;
     suffix-LD = false;
-    disablePythonSafePath = false;
   }
   // rawconfiguration.settings
   # TODO: Make wrapRc optional by adding an option to put
@@ -70,9 +68,8 @@ let
 
   inherit (finalSettings)
     withNodeJs withRuby withPerl withPython3
-    extraName configDirName #aliases 
-    neovim-unwrapped suffix-path patchSubs
-    suffix-LD disablePythonSafePath wrapRc;
+    extraName configDirName neovim-unwrapped 
+    suffix-path patchSubs suffix-LD wrapRc;
 
   neovim = if neovim-unwrapped == null then pkgs.neovim-unwrapped else neovim-unwrapped;
 
