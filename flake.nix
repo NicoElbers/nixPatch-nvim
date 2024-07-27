@@ -252,14 +252,16 @@
       nv = configWrapper { inherit configuration extra_pkg_config name; };
     };
 
+    inherit configWrapper;
+
     devShells.default = with pkgs; mkShell {
       packages = [
         zig.packages.${system}."0.13.0"
         zls.packages.${system}.zls
-        hello
       ];
     };
   }) // {
+    templates = import ./templates;
   };
 }
 
