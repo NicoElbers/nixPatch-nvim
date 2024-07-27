@@ -211,9 +211,7 @@
 
       aliases = [ "vim" "vi" ];
 
-      customSubs = with pkgs.vimPlugins; 
-        (import ./subPatches.nix {inherit pkgs;})
-        ++ [
+      customSubs = with pkgs.vimPlugins; [
 
         ];
 
@@ -227,7 +225,7 @@
         aliases = null;
         # neovim-unwrapped = null;
         neovim-unwrapped = inputs.neovim-nightly-overlay.packages.${pkgs.system}.neovim;
-
+        patchSubs = true;
         suffix-path = false;
         suffix-LD = false;
         disablePythonSafePath = false;

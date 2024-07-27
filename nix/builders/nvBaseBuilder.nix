@@ -52,7 +52,7 @@ let
     configDirName = "nvim";
     aliases = null;
     neovim-unwrapped = null;
-
+    patchSubs = true;
     suffix-path = false;
     suffix-LD = false;
     disablePythonSafePath = false;
@@ -65,13 +65,13 @@ let
   inherit (finalConfiguration) 
     luaPath plugins runtimeDeps extraConfig
     environmentVariables python3Packages 
-    extraPython3WrapperArgs customSubs
-    extraWrapperArgs sharedLibraries luaPackages;
+    extraPython3WrapperArgs customSubs aliases
+    extraWrapperArgs sharedLibraries;
 
   inherit (finalSettings)
     withNodeJs withRuby withPerl withPython3
-    extraName configDirName aliases 
-    neovim-unwrapped suffix-path
+    extraName configDirName #aliases 
+    neovim-unwrapped suffix-path patchSubs
     suffix-LD disablePythonSafePath wrapRc;
 
   neovim = if neovim-unwrapped == null then pkgs.neovim-unwrapped else neovim-unwrapped;
@@ -141,9 +141,15 @@ let
 
   perlEnv = pkgs.perl.withPackages (p: [ p.NeovimExt p.Appcpanminus ]);
 
+  customSubsPatched = 
+    customSubs 
+    ++ lib.optionals patchSubs (pkgs.callPackage ./../../subPatches.nix {});
+
   luaConfig = patcher {
     inherit luaPath plugins name;
-    inherit extraConfig customSubs;
+    inherit extraConfig;
+
+    customSubs = customSubsPatched;
 
     inherit withNodeJs;
     inherit withRuby rubyEnv;
