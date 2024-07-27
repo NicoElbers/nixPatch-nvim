@@ -6,11 +6,9 @@ patcher:
   , dependencyOverlays
 }:
 # TODO: Get specialArgs to work
-{ configuration, specialArgs ? null, extra_pkg_config ? {} }:
+{ configuration, specialArgs ? null, extra_pkg_config ? {}, name ? "nv" }:
 let
   utils = import ../utils;
-
-  name = "nv";
 
   pkgs = import nixpkgs ({
     inherit system;

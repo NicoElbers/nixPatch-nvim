@@ -20,6 +20,8 @@
 
   outputs = { nixpkgs, zig, zls, ... }@inputs: 
   let
+    name = "nv";
+
     utils = (import ./nix/utils);
     forEachSystem = utils.eachSystem nixpkgs.lib.platforms.all;
     builders = (import ./nix/builders);
@@ -249,7 +251,7 @@
   in {
     packages = rec {
       default = nv;
-      nv = configWrapper { inherit configuration extra_pkg_config; };
+      nv = configWrapper { inherit configuration extra_pkg_config name; };
     };
 
     devShells.default = with pkgs; mkShell {
