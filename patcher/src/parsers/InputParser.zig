@@ -23,7 +23,6 @@ pub fn deinit(self: *Self) void {
     self.vim_plugin_file.close();
 }
 
-// TODO: heavily consider taking the url from pkg.meta.homepage instead
 pub fn parseInput(self: Self, input_blob: []const u8) ![]const Plugin {
     const half_plugins = try parseBlob(self.alloc, input_blob);
 

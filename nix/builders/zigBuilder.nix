@@ -11,7 +11,6 @@ stdenvNoCC.mkDerivation {
   dontInstall = true;
   doCheck = true;
 
-  # TODO: See if it's faster to just do zig build-exe
   buildPhase = ''
     mkdir -p .cache
 

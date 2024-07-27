@@ -55,7 +55,8 @@ pub fn deinit(self: *Self) void {
 /// directly and parses lua files for substitutions before copying the parsed
 /// files over.
 pub fn createConfig(self: Self, subs: []const Substitution) !void {
-    // FIXME: Create a look that asserts subs.to are all unique
+    // FIXME: Create a loop that asserts subs.from are all unique
+    //  - What if we have a custom sub that overrides a patched sub?
     var walker = try self.in_dir.walk(self.alloc);
     defer walker.deinit();
 

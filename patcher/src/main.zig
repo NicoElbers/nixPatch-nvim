@@ -155,10 +155,12 @@ fn getSubs(alloc: Allocator, plugins: []const Plugin, extra_subs: []const u8) ![
 fn subsFromBlob(alloc: Allocator, subs_blob: []const u8, out: *std.ArrayList(Substitution)) !void {
     var iter = BufIter.init(subs_blob);
 
-    // TODO: Is this ok? Ask someone with more experience
+    // If the blob is less than 3 characters, the blob must not contain any subs
+    // as at least 3 seperator characters are required
     if (subs_blob.len < 3) {
         return;
     }
+
     while (!iter.isDone()) {
         const typ = iter.nextUntilBefore("|").?;
         _ = iter.next();
