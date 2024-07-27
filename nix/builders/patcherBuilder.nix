@@ -29,7 +29,7 @@ let
   subToBlobItem = s: 
     let
       type = if s ? type then s.type else "string";
-      extra = if s ? extra then s.extra else "-";
+      extra = if s ? extra && s.extra != null then s.extra else "-";
     in 
       "${type}|${s.from}|${s.to}|${extra}";
 

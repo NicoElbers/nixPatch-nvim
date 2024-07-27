@@ -17,8 +17,10 @@ let
     ];
 in with pkgs.vimPlugins; [
   {
+    type = "string";
     from = "lazy.nvim-plugin-path";
     to = "${lazy-nvim}";
+    extra = null;
   }
 ] 
 ++ (githubURL "numToStr/Comment.nvim" comment-nvim)
