@@ -187,7 +187,9 @@ fn findPluginUrl(alloc: Allocator, vim_plugin_buf: []const u8, plugins: []Plugin
     std.log.debug("Found {d} relevant urls", .{relevant_urls_found});
     // FIXME: check if this could be valid behavior
     for (plugins) |plugin| {
-        assert(plugin.tag != .UrlNotFound);
+        if (plugin.tag == .UrlNotFound) {
+            std.log.warn("Plugin {s} did not find a relevant url", .{plugin.pname});
+        }
     }
 
     // We didn't end in the middle of looking something up

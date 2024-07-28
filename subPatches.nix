@@ -25,3 +25,6 @@ in with pkgs.vimPlugins; [
 ] 
 ++ (githubURL "numToStr/Comment.nvim" comment-nvim)
 ++ (githubURL "L3MON4D3/LuaSnip" luasnip)
+# FIXME: Also parse overrides.nix
+# https://github.com/NixOS/nixpkgs/commit/c9b408ea5d6277213462690eee46ae1ab1b03a92
+++ (githubURL "mrcjkb/rustaceanvim" rustaceanvim)
