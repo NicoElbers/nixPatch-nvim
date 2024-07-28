@@ -33,7 +33,7 @@ let
     python3Packages = [ ];
     extraPython3WrapperArgs = [ ];
 
-    luaPackages = [ ];
+    luaPackages = [ ]; # FIXME: why is this not being used????
 
     propagatedBuildInputs = [ ];
     sharedLibraries = [ ];
