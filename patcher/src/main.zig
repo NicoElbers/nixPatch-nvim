@@ -10,7 +10,6 @@ const LuaParser = @import("parsers/LuaParser.zig");
 const Plugin = util.Plugin;
 const Substitution = util.Substitution;
 
-// FIXME: Why is BufIter in parsers???
 const BufIter = @import("parsers/BufIter.zig");
 
 const Allocator = std.mem.Allocator;

@@ -1,7 +1,5 @@
 const std = @import("std");
 const mem = std.mem;
-// TODO: Assert a bunch of shit
-//  - like?
 const assert = std.debug.assert;
 
 const Self = @This();

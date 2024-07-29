@@ -131,7 +131,6 @@ pub fn mmapFile(file: File, config: MmapConfig) ![]align(mem.page_size) u8 {
 }
 
 pub fn unMmapFile(mapped_file: []align(mem.page_size) u8) void {
-    // TODO: make an mmap alternative for windows
     assert(@import("builtin").os.tag != .windows);
 
     std.posix.munmap(mapped_file);

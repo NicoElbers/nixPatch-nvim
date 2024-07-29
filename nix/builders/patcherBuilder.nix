@@ -62,7 +62,6 @@ let
     then "vim.g.${prog}_host_prog='${providers}/bin/${name}-${prog}'"
     else "vim.g.loaded_${prog}_provider=0";
 
-  # TODO: pass these in as extra config later
   hostProviderLua = lib.mapAttrsToList genProviderCmd hostprog_check_table;
 
   finalExtraConfig = builtins.concatStringsSep "\n" (

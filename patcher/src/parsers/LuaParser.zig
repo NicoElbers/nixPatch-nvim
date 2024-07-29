@@ -105,7 +105,6 @@ pub fn createConfig(self: Self, subs: []const Substitution) !void {
 fn subsFromBlob(alloc: Allocator, subs_blob: []const u8, out: *std.ArrayList(Substitution)) !void {
     var iter = BufIter.init(subs_blob);
 
-    // TODO: Is this ok? Ask someone with more experience
     if (subs_blob.len < 3) {
         return;
     }
