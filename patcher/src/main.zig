@@ -2,15 +2,17 @@
 // TODO: Create an end to end test on a sample config
 const std = @import("std");
 const fs = std.fs;
-const assert = std.debug.assert;
-const util = @import("utils.zig");
+const parsers = @import("parsers");
 
-const InputParser = @import("parsers/InputParser.zig");
-const LuaParser = @import("parsers/LuaParser.zig");
+const assert = std.debug.assert;
+const util = parsers.utils;
+
+const InputParser = parsers.input_parser;
+const LuaParser = parsers.LuaParser;
+const BufIter = parsers.BufIter;
+
 const Plugin = util.Plugin;
 const Substitution = util.Substitution;
-
-const BufIter = @import("parsers/BufIter.zig");
 
 const Allocator = std.mem.Allocator;
 const File = std.fs.File;
@@ -254,11 +256,4 @@ fn subsFromPlugins(alloc: Allocator, plugins: []const Plugin, out: *std.ArrayLis
             },
         }
     }
-}
-
-test {
-    _ = @import("parsers/InputParser.zig");
-    _ = @import("parsers/LuaParser.zig");
-    _ = @import("utils.zig");
-    _ = @import("parsers/BufIter.zig");
 }

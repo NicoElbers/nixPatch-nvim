@@ -1,7 +1,7 @@
 const std = @import("std");
 const fs = std.fs;
 const assert = std.debug.assert;
-const utils = @import("../utils.zig");
+const utils = @import("utils.zig");
 
 const Allocator = std.mem.Allocator;
 const File = fs.File;
@@ -47,7 +47,7 @@ pub fn createConfig(self: Self, subs: []const Substitution) !void {
     std.log.info("Starting directory walk", .{});
     while (try walker.next()) |entry| {
         switch (entry.kind) {
-            .directory => {
+            .directory, .sym_link => {
                 // Go on if the dir already exists
                 self.out_dir.access(entry.path, .{}) catch {
                     try self.out_dir.makeDir(entry.path);
@@ -67,6 +67,7 @@ pub fn createConfig(self: Self, subs: []const Substitution) !void {
 
                     if (std.mem.eql(u8, entry.path, "init.lua")) {
                         try out_file.writeAll(self.extra_init_config);
+                        try out_file.writeAll("\n");
                     }
 
                     try out_file.writeAll(out_buf);
@@ -573,11 +574,7 @@ test "cmp-nvim-lsp failing in config" {
             "cmp-nvim-lsp",
         ),
     };
-    defer {
-        for (subs) |sub| {
-            sub.deinit(alloc);
-        }
-    }
+    defer for (subs) |sub| sub.deinit(alloc);
 
     const out_buf = try parseLuaFile(alloc, in, subs);
     defer alloc.free(out_buf);

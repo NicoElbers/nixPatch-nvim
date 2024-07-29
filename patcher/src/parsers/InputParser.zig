@@ -1,7 +1,7 @@
 const std = @import("std");
 const fs = std.fs;
 const assert = std.debug.assert;
-const utils = @import("../utils.zig");
+const utils = @import("utils.zig");
 
 const Allocator = std.mem.Allocator;
 const File = std.fs.File;

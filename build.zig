@@ -1,19 +1,41 @@
 const std = @import("std");
+const Build = std.Build;
+const Step = Build.Step;
 
-pub fn build(b: *std.Build) void {
+pub const NamedModule = struct {
+    mod: *Build.Module,
+    name: []const u8,
+
+    pub fn init(b: *Build, name: []const u8, options: Build.Module.CreateOptions) NamedModule {
+        const mod = b.addModule(name, options);
+        return NamedModule{
+            .mod = mod,
+            .name = name,
+        };
+    }
+};
+
+pub fn build(b: *Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    // Options
+    // Parser module
+    const parsers_mod = NamedModule.init(b, "parsers", .{
+        .root_source_file = b.path("patcher/src/parsers/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    // Check step
+    const check = b.step("check", "Check if project compiles");
 
     // Create exe
-    const exe = b.addExecutable(.{
+    const exe = addExe(b, check, &.{parsers_mod}, .{
         .name = "config-patcher",
         .root_source_file = b.path("patcher/src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
-    b.installArtifact(exe);
 
     // Run command
     const run_cmd = b.addRunArtifact(exe);
@@ -25,14 +47,45 @@ pub fn build(b: *std.Build) void {
     run_step.dependOn(&run_cmd.step);
 
     // Tests
-    const exe_unit_tests = b.addTest(.{
-        .root_source_file = b.path("patcher/src/main.zig"),
+    const test_step = b.step("test", "Run unit tests");
+
+    _ = addTest(b, check, &.{parsers_mod}, test_step, .{
+        .root_source_file = b.path("patcher/src/parsers/root.zig"),
         .target = target,
         .optimize = optimize,
     });
 
-    const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
+}
 
-    const test_step = b.step("test", "Run unit tests");
-    test_step.dependOn(&run_exe_unit_tests.step);
+fn addExe(b: *Build, check: *Step, mods: []const NamedModule, options: Build.ExecutableOptions) *Step.Compile {
+    const exe = b.addExecutable(options);
+    for (mods) |mod| {
+        exe.root_module.addImport(mod.name, mod.mod);
+    }
+    b.installArtifact(exe);
+
+    const check_exe = b.addExecutable(options);
+    for (mods) |mod| {
+        check_exe.root_module.addImport(mod.name, mod.mod);
+    }
+    check.dependOn(&check_exe.step);
+
+    return exe;
+}
+
+fn addTest(b: *Build, check: *Step, mods: []const NamedModule, tst: *Step, options: Build.TestOptions) *Step.Compile {
+    const exe = b.addTest(options);
+    for (mods) |mod| {
+        exe.root_module.addImport(mod.name, mod.mod);
+    }
+    const run_exe = b.addRunArtifact(exe);
+    tst.dependOn(&run_exe.step);
+
+    const check_exe = b.addTest(options);
+    for (mods) |mod| {
+        check_exe.root_module.addImport(mod.name, mod.mod);
+    }
+    check.dependOn(&check_exe.step);
+
+    return exe;
 }
