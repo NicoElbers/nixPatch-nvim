@@ -5,7 +5,6 @@ patcher:
   , system
   , dependencyOverlays
 }:
-# TODO: Get specialArgs to work
 { configuration, specialArgs ? null, extra_pkg_config ? {}, name ? "nv" }:
 let
   utils = import ../utils;
@@ -20,7 +19,7 @@ let
   } // { config = extra_pkg_config; });
   lib = pkgs.lib;
 
-  rawconfiguration = configuration { inherit pkgs; };
+  rawconfiguration = configuration { inherit pkgs specialArgs; };
 
   finalConfiguration = {
     # luaPath cannot be merged
