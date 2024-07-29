@@ -1,0 +1,3 @@
+return {
+	"Hello World",
+}

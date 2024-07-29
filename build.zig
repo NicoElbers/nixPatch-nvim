@@ -55,6 +55,11 @@ pub fn build(b: *Build) void {
         .optimize = optimize,
     });
 
+    _ = addTest(b, check, &.{parsers_mod}, test_step, .{
+        .root_source_file = b.path("patcher/test/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
 }
 
 fn addExe(b: *Build, check: *Step, mods: []const NamedModule, options: Build.ExecutableOptions) *Step.Compile {
