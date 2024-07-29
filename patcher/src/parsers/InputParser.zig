@@ -174,6 +174,27 @@ fn findPluginUrl(alloc: Allocator, buf: []const u8, plugins: []Plugin) !void {
                     const url = trim(urlLine.next().?);
 
                     plugin.url = try alloc.dupe(u8, trim(url));
+                } else if (eql("fetchzip", fetch_method)) {
+                    var urlLine = splitOnEq(line_spliterator.next().?);
+                    assert(eql("url", utils.trim(urlLine.first())));
+                    const url_with_zip = trim(urlLine.next().?);
+
+                    if (mem.startsWith(u8, url_with_zip, "https://github.com/")) {
+                        plugin.tag = .GithubUrl;
+                        const last_idx = mem.lastIndexOfScalar(u8, url_with_zip, '/').?;
+                        const second_last_idx = mem.lastIndexOfScalar(u8, url_with_zip[0..last_idx], '/').?;
+
+                        plugin.url = try alloc.dupe(u8, trim(url_with_zip[0..second_last_idx]));
+                    } else {
+                        std.log.err(
+                            \\Cannot properly parse url for '{s}'. Please parse the URL manually and add it to your patches
+                            \\  '{s}'
+                        ,
+                            .{ plugin.pname, url_with_zip },
+                        );
+                        state = .findPname;
+                        continue :outer;
+                    }
                 } else {
                     std.log.err("Found fetch method '{s}'", .{fetch_method});
                     unreachable;
@@ -186,11 +207,27 @@ fn findPluginUrl(alloc: Allocator, buf: []const u8, plugins: []Plugin) !void {
                 var split = splitOnEq(line);
                 const first = trim(split.first());
 
+                if (eql("pname", first)) {
+                    std.debug.print("Overflow: '{s}'\n", .{plugin.pname});
+                }
+
                 assert(!eql("pname", first));
-                if (!eql("meta.homepage", first))
+                if (!eql("meta.homepage", first) and !eql("meta", first))
                     continue :outer;
 
-                const url = trim(split.next().?);
+                const url = blk: {
+                    if (eql("meta.homepage", first)) {
+                        break :blk trim(split.next().?);
+                    } else {
+                        // TODO: This assumes that "homepage" will always be the
+                        // next line, make it more robust
+                        var homepage_split = splitOnEq(line_spliterator.next().?);
+                        assert(eql("homepage", homepage_split.first()));
+
+                        break :blk trim(homepage_split.next().?);
+                    }
+                };
+
                 assert(eql(url, plugin.url));
 
                 relevant_urls_found += 1;

@@ -101,8 +101,22 @@ fn getPlugins(alloc: Allocator, nixpkgs_path: []const u8, input_blob: []const u8
     std.log.debug("Attempting to open file '{s}'", .{vim_plugins_path});
     const vim_plugins_file = try fs.openFileAbsolute(vim_plugins_path, .{});
     defer vim_plugins_file.close();
+    //
+    // Get the plugin file
+    const lua_plugins_path = try fs.path.join(alloc, &.{
+        nixpkgs_path,
+        "pkgs",
+        "development",
+        "lua-modules",
+        "generated-packages.nix",
+    });
+    defer alloc.free(lua_plugins_path);
 
-    const files: []const File = &.{vim_plugins_file};
+    std.log.debug("Attempting to open file '{s}'", .{lua_plugins_path});
+    const lua_plugins_file = try fs.openFileAbsolute(lua_plugins_path, .{});
+    defer lua_plugins_file.close();
+
+    const files: []const File = &.{ vim_plugins_file, lua_plugins_file };
 
     return try InputParser.parseInput(alloc, input_blob, files);
 }
