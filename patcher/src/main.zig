@@ -14,6 +14,7 @@ const Substitution = util.Substitution;
 const BufIter = @import("parsers/BufIter.zig");
 
 const Allocator = std.mem.Allocator;
+const File = std.fs.File;
 
 pub const log_level: std.log.Level = .info;
 
@@ -83,9 +84,10 @@ pub fn patchConfig(
 }
 
 fn getPlugins(alloc: Allocator, nixpkgs_path: []const u8, input_blob: []const u8) ![]const Plugin {
-    // Get the plugin file
     assert(fs.path.isAbsolute(nixpkgs_path));
-    const full_path = try fs.path.join(alloc, &.{
+
+    // Get the plugin file
+    const vim_plugins_path = try fs.path.join(alloc, &.{
         nixpkgs_path,
         "pkgs",
         "applications",
@@ -94,16 +96,15 @@ fn getPlugins(alloc: Allocator, nixpkgs_path: []const u8, input_blob: []const u8
         "plugins",
         "generated.nix",
     });
-    defer alloc.free(full_path);
+    defer alloc.free(vim_plugins_path);
 
-    std.log.debug("Attempting to open file '{s}'", .{full_path});
-    const vim_plugins_file = try fs.openFileAbsolute(full_path, .{});
+    std.log.debug("Attempting to open file '{s}'", .{vim_plugins_path});
+    const vim_plugins_file = try fs.openFileAbsolute(vim_plugins_path, .{});
+    defer vim_plugins_file.close();
 
-    // Get plugins
-    var input_parser = InputParser.init(alloc, vim_plugins_file);
-    defer input_parser.deinit();
+    const files: []const File = &.{vim_plugins_file};
 
-    return try input_parser.parseInput(input_blob);
+    return try InputParser.parseInput(alloc, input_blob, files);
 }
 
 fn getSubs(alloc: Allocator, plugins: []const Plugin, extra_subs: []const u8) ![]const Substitution {

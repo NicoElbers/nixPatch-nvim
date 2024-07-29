@@ -7,34 +7,41 @@ const Allocator = std.mem.Allocator;
 const File = std.fs.File;
 const Plugin = utils.Plugin;
 
-const Self = @This();
+pub fn parseInput(alloc: Allocator, input_blob: []const u8, input_files: []const File) ![]const Plugin {
+    const user_plugins = try parseBlob(alloc, input_blob);
 
-vim_plugin_file: File,
-alloc: Allocator,
+    for (input_files) |file| {
+        const file_buf = try utils.mmapFile(file, .{});
+        defer utils.unMmapFile(file_buf);
 
-pub fn init(alloc: Allocator, vim_plugin_file: File) Self {
-    return Self{
-        .alloc = alloc,
-        .vim_plugin_file = vim_plugin_file,
-    };
-}
+        try findPluginUrl(
+            alloc,
+            file_buf,
+            user_plugins,
+        );
+    }
 
-pub fn deinit(self: *Self) void {
-    self.vim_plugin_file.close();
-}
+    for (user_plugins) |plugin| {
+        if (plugin.tag != .UrlNotFound) continue;
 
-pub fn parseInput(self: Self, input_blob: []const u8) ![]const Plugin {
-    const half_plugins = try parseBlob(self.alloc, input_blob);
+        std.log.warn("Did not find a url for {s}", .{plugin.pname});
+    }
 
-    const vim_plugin_buf = try utils.mmapFile(self.vim_plugin_file, .{});
-    defer utils.unMmapFile(vim_plugin_buf);
+    // Assert that all pnames and urls are unique
+    for (0..user_plugins.len) |needle_idx| {
+        const needle_plugin = user_plugins[needle_idx];
+        for (0..user_plugins.len) |haystack_idx| {
+            if (needle_idx == haystack_idx) continue;
+            const haystack_plugin = user_plugins[haystack_idx];
 
-    const final_plugins = try findPluginUrl(
-        self.alloc,
-        vim_plugin_buf,
-        half_plugins,
-    );
-    return final_plugins;
+            assert(!std.mem.eql(u8, needle_plugin.pname, haystack_plugin.pname));
+
+            if (needle_plugin.tag == .UrlNotFound or haystack_plugin.tag == .UrlNotFound) continue;
+            assert(!std.mem.eql(u8, needle_plugin.url, haystack_plugin.url));
+        }
+    }
+
+    return user_plugins;
 }
 
 fn parseBlob(alloc: Allocator, input_blob: []const u8) ![]Plugin {
@@ -75,18 +82,20 @@ fn parseBlob(alloc: Allocator, input_blob: []const u8) ![]Plugin {
     return try plugins.toOwnedSlice();
 }
 
-fn findPluginUrl(alloc: Allocator, vim_plugin_buf: []const u8, plugins: []Plugin) ![]Plugin {
+fn findPluginUrl(alloc: Allocator, buf: []const u8, plugins: []Plugin) !void {
     const State = union(enum) {
         findPname,
         verifyVersion: *Plugin,
         getUrl: *Plugin,
         verifyUrl: *Plugin,
     };
+
     var state: State = .findPname;
+    defer assert(state == .findPname);
 
     var relevant_urls_found: u32 = 0;
 
-    var line_spliterator = std.mem.splitSequence(u8, vim_plugin_buf, "\n");
+    var line_spliterator = std.mem.splitSequence(u8, buf, "\n");
     outer: while (line_spliterator.next()) |line| {
         switch (state) {
             .findPname => {
@@ -99,6 +108,9 @@ fn findPluginUrl(alloc: Allocator, vim_plugin_buf: []const u8, plugins: []Plugin
                 inner: for (plugins) |*plugin| {
                     if (!eql(pname, plugin.pname))
                         continue :inner;
+
+                    // We break because we already found the url, no need for double work
+                    if (plugin.tag != .UrlNotFound) continue :outer;
 
                     state = .{ .verifyVersion = plugin };
                     continue :outer;
@@ -162,7 +174,10 @@ fn findPluginUrl(alloc: Allocator, vim_plugin_buf: []const u8, plugins: []Plugin
                     const url = trim(urlLine.next().?);
 
                     plugin.url = try alloc.dupe(u8, trim(url));
-                } else unreachable;
+                } else {
+                    std.log.err("Found fetch method '{s}'", .{fetch_method});
+                    unreachable;
+                }
 
                 state = .{ .verifyUrl = plugin };
             },
@@ -185,16 +200,6 @@ fn findPluginUrl(alloc: Allocator, vim_plugin_buf: []const u8, plugins: []Plugin
     }
 
     std.log.debug("Found {d} relevant urls", .{relevant_urls_found});
-    // FIXME: check if this could be valid behavior
-    for (plugins) |plugin| {
-        if (plugin.tag == .UrlNotFound) {
-            std.log.warn("Plugin {s} did not find a relevant url", .{plugin.pname});
-        }
-    }
-
-    // We didn't end in the middle of looking something up
-    assert(state == .findPname);
-    return plugins;
 }
 
 // ---- Tests ----
@@ -316,7 +321,7 @@ test findPluginUrl {
         \\  };
     ;
 
-    var input_plugins = [_]Plugin{
+    var plugins = [_]Plugin{
         Plugin{
             .pname = "BetterLua.vim",
             .version = "2020-08-14",
@@ -340,18 +345,18 @@ test findPluginUrl {
         },
     };
 
-    const output = try findPluginUrl(
+    try findPluginUrl(
         alloc,
         input_buf,
-        input_plugins[0..],
+        plugins[0..],
     );
     defer {
-        for (output) |plugin| {
+        for (plugins) |plugin| {
             alloc.free(plugin.url);
         }
     }
 
-    try std.testing.expectEqual(output.len, 3);
+    try std.testing.expectEqual(plugins.len, 3);
 
     const expected: []const Plugin = &.{
         Plugin{
@@ -378,7 +383,7 @@ test findPluginUrl {
     };
 
     for (0..3) |idx| {
-        try eqlPlugin(output[idx], expected[idx]);
+        try eqlPlugin(plugins[idx], expected[idx]);
     }
 }
 
