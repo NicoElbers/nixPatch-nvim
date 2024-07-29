@@ -19,6 +19,13 @@ const File = std.fs.File;
 pub const log_level: std.log.Level = .info;
 
 pub fn main() !void {
+    const start_time = try std.time.Instant.now();
+    defer {
+        const end_time = std.time.Instant.now() catch unreachable;
+        const elapsed = end_time.since(start_time);
+        std.log.info("Patching took {d}ms", .{elapsed / std.time.ns_per_ms});
+    }
+
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
 
