@@ -78,10 +78,26 @@ pub fn patchConfig(
     out_path: []const u8,
     extra_config: []const u8,
 ) !void {
+    assert(fs.path.isAbsolute(in_path));
+    assert(fs.path.isAbsolute(out_path));
+
+    std.log.debug("Attempting to open dir '{s}'", .{in_path});
+    const in_dir = try fs.openDirAbsolute(in_path, .{ .iterate = true });
+
+    std.log.debug("Attempting to create '{s}'", .{out_path});
+
+    // Go on if the dir already exists
+    fs.accessAbsolute(out_path, .{}) catch {
+        try fs.makeDirAbsolute(out_path);
+    };
+
+    std.log.debug("Attempting to open '{s}'", .{out_path});
+    const out_dir = try fs.openDirAbsolute(out_path, .{});
+
     var lua_parser = try LuaParser.init(
         alloc,
-        in_path,
-        out_path,
+        in_dir,
+        out_dir,
         extra_config,
     );
     defer lua_parser.deinit();
