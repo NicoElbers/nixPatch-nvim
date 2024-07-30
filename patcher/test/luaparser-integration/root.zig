@@ -12,26 +12,6 @@ const File = fs.File;
 const LuaParser = parsers.LuaParser;
 const Subs = utils.Substitution;
 
-fn makeSubs() ![]const Subs {
-    var out = std.ArrayList(Subs).init(alloc);
-
-    try out.append(try Subs.initStringSub(
-        alloc,
-        "dont_replace_me",
-        "ERROR I WAS REPLACED",
-        null,
-    ));
-
-    try out.append(try Subs.initStringSub(alloc, "replace_me", "I_was_replaced", null));
-    try out.append(try Subs.initStringSub(alloc, "replace_keyed", "I_was_key_replaced", "str"));
-
-    try out.append(try Subs.initUrlSub(alloc, "plugin/url", "plugin/path", "plugin-name"));
-    try out.append(try Subs.initUrlSub(alloc, "other/url", "other/path", "other-name"));
-    try out.append(try Subs.initUrlSub(alloc, "third/url", "third/path", "third-name"));
-
-    return out.toOwnedSlice();
-}
-
 test {
     var cwd = try fs.cwd().openDir(".", .{ .iterate = true });
     defer cwd.close();
@@ -47,6 +27,24 @@ test {
     try run(cwd, extra_init_config, subs);
 
     try verify(cwd);
+}
+
+fn makeSubs() ![]const Subs {
+    var out = std.ArrayList(Subs).init(alloc);
+
+    // Should not be replaced
+    try out.append(try Subs.initStringSub(alloc, "dont_replace_me", "ERROR I WAS REPLACED", null));
+
+    // String replacements
+    try out.append(try Subs.initStringSub(alloc, "replace_me", "I_was_replaced", null));
+    try out.append(try Subs.initStringSub(alloc, "replace_keyed", "I_was_key_replaced", "str"));
+
+    // Url replacements
+    try out.append(try Subs.initUrlSub(alloc, "plugin/url", "plugin/path", "plugin-name"));
+    try out.append(try Subs.initUrlSub(alloc, "other/url", "other/path", "other-name"));
+    try out.append(try Subs.initUrlSub(alloc, "third/url", "third/path", "third-name"));
+
+    return out.toOwnedSlice();
 }
 
 const alloc = testing.allocator;
