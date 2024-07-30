@@ -78,19 +78,19 @@ fn addExe(b: *Build, check: *Step, mods: []const NamedModule, options: Build.Exe
     return exe;
 }
 
-fn addTest(b: *Build, check: *Step, mods: []const NamedModule, tst: *Step, options: Build.TestOptions) *Step.Compile {
-    const exe = b.addTest(options);
+fn addTest(b: *Build, check: *Step, mods: []const NamedModule, tst_step: *Step, options: Build.TestOptions) *Step.Compile {
+    const tst = b.addTest(options);
     for (mods) |mod| {
-        exe.root_module.addImport(mod.name, mod.mod);
+        tst.root_module.addImport(mod.name, mod.mod);
     }
-    const run_exe = b.addRunArtifact(exe);
-    tst.dependOn(&run_exe.step);
+    const run_tst = b.addRunArtifact(tst);
+    tst_step.dependOn(&run_tst.step);
 
-    const check_exe = b.addTest(options);
+    const check_tst = b.addTest(options);
     for (mods) |mod| {
-        check_exe.root_module.addImport(mod.name, mod.mod);
+        check_tst.root_module.addImport(mod.name, mod.mod);
     }
-    check.dependOn(&check_exe.step);
+    check.dependOn(&check_tst.step);
 
-    return exe;
+    return tst;
 }
