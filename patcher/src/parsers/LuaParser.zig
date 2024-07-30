@@ -169,9 +169,13 @@ fn parseLuaFile(alloc: Allocator, input_buf: []const u8, subs: []const Substitut
         var chosen_sub: ?Substitution = null;
         for (subs) |sub| {
             switch (sub.tag) {
-                .string => {
+                .string => |key| {
                     const next_str = iter.peekNextLuaString() orelse continue;
                     if (!std.mem.eql(u8, sub.from, next_str)) continue;
+
+                    if (key) |k| {
+                        _ = iter.peekUntilNextLuaStringKey(k) orelse continue;
+                    }
 
                     chosen_sub = sub;
                 },
@@ -199,13 +203,16 @@ fn parseLuaFile(alloc: Allocator, input_buf: []const u8, subs: []const Substitut
                 .string => |key| {
                     const until_next_string = blk: {
                         if (key) |k| {
-                            break :blk iter.peekUntilNextLuaStringKey(k) orelse
-                                iter.peekNextUntilLuaString() orelse unreachable;
+                            break :blk iter.peekUntilNextLuaStringKey(k) orelse unreachable;
                         } else {
                             break :blk iter.peekNextUntilLuaString() orelse unreachable;
                         }
                     };
                     try out_arr.appendSlice(until_next_string);
+                    if (key) |k| {
+                        try out_arr.appendSlice(k);
+                        try out_arr.appendSlice(" = ");
+                    }
                     try out_arr.appendSlice("[["); // String opening
                     try out_arr.appendSlice(sub.to);
                     try out_arr.appendSlice("]]"); // String closing

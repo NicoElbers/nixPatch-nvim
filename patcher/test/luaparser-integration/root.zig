@@ -23,21 +23,21 @@ fn makeSubs() ![]const Subs {
     ));
 
     try out.append(try Subs.initStringSub(alloc, "replace_me", "I_was_replaced", null));
+    try out.append(try Subs.initStringSub(alloc, "replace_keyed", "I_was_key_replaced", "str"));
 
     try out.append(try Subs.initUrlSub(alloc, "plugin/url", "plugin/path", "plugin-name"));
     try out.append(try Subs.initUrlSub(alloc, "other/url", "other/path", "other-name"));
+    try out.append(try Subs.initUrlSub(alloc, "third/url", "third/path", "third-name"));
 
     return out.toOwnedSlice();
 }
 
 test {
-    // std.debug.print("", .{});
-
     var cwd = try fs.cwd().openDir(".", .{ .iterate = true });
     defer cwd.close();
 
     try cwd.deleteTree("patcher/test/luaparser-integration/out");
-    // defer cwd.deleteTree("patcher/test/luaparser-integration/out") catch unreachable;
+    defer cwd.deleteTree("patcher/test/luaparser-integration/out") catch unreachable;
 
     const subs = try makeSubs();
     defer Subs.deinitSubs(subs, alloc);

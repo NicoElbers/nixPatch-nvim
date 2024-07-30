@@ -3,6 +3,8 @@ local smth = {
 	"plugin/url",
 }
 
+return { "third/url" }
+
 return {
 	{
 		"plugin/url",

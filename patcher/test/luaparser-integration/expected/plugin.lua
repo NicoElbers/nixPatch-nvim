@@ -3,6 +3,8 @@ local smth = {
 	dir = [[plugin/path]], name = [[plugin-name]],
 }
 
+return { dir = [[third/path]], name = [[third-name]] }
+
 return {
 	{
 		dir = [[plugin/path]], name = [[plugin-name]],
