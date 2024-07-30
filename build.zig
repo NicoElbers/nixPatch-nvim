@@ -84,6 +84,7 @@ fn addTest(b: *Build, check: *Step, mods: []const NamedModule, tst_step: *Step, 
         tst.root_module.addImport(mod.name, mod.mod);
     }
     const run_tst = b.addRunArtifact(tst);
+    run_tst.has_side_effects = true;
     tst_step.dependOn(&run_tst.step);
 
     const check_tst = b.addTest(options);
