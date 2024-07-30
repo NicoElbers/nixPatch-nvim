@@ -7,3 +7,4 @@ result
 # Don't commit zig caches
 **/.zig-cache/**
 **/zig-out/**
+patcher/test/luaparser-integration/out
