@@ -3,9 +3,19 @@
 <!--toc:start-->
 
 - [nv: keep your lazy.nvim config in lua](#nv-keep-your-lazynvim-config-in-lua)
+  - [Why](#why)
+  - [Installation](#installation)
+    - [Setting up your config](#setting-up-your-config)
+      - [Setting up dependencies](#setting-up-dependencies)
+      - [Utilities](#utilities)
+      - [Loading lazy.nvim](#loading-lazynvim)
+      - [Dealing with mason and the like](#dealing-with-mason-and-the-like)
+    - [Setting up the nix part](#setting-up-the-nix-part)
   - [Goals](#goals)
   - [Limitations](#limitations)
   - [Roadmap](#roadmap)
+  - [How it works](#how-it-works)
+  - [Blocks for release](#blocks-for-release)
   <!--toc:end-->
 
 `nv` is a wrapper around Neovim that makes your lua configuration nix compatible. It makes the barrier to a working Neovim configuration on nix as small as possible for existing Neovim users.
@@ -196,15 +206,35 @@ Now that we already have our utility functions this is pretty easy. I'll give my
 - [Downloading the mason plugins](https://github.com/BirdeeHub/nixCats-nvim/blob/f917800c75ae42bfec3014ea6b79252d6cc23546/nix/templates/kickstart-nvim/init.lua#L487-L509)
 - [Using mason for lsp configuration](https://github.com/BirdeeHub/nixCats-nvim/blob/f917800c75ae42bfec3014ea6b79252d6cc23546/nix/templates/kickstart-nvim/init.lua#L702-L748)
 
-### Getting the flake
-
-<!-- TODO: finish -->
+### Setting up the nix part
 
 Inside the directory where you have your configuration do `nix flake init -t github:NicoElbers/nv`. This creates a `flake.nix`. Inside this flake you will find the outlines for everything you need.
 
-### Setting up the flake
+The main things you need to look out for are `plugins`, `runtimeDeps` and `luaPath`.
 
-<!-- TODO: make -->
+- luaPath: This is very simply the path to your configuration root, aka the directory which contains your `init.lua`
+- plugins: This is where you tell nix what plugins to download. This will take a little bit of time, the easiest way I have found to do this is to put 'vimPlugins' in [nixos search](https://search.nixos.org/packages?channel=unstable&from=-1&size=50&sort=relevance&type=packages&query=vimPlugins) and search for all your plugins there. In my experience, with a little bit of fiddling, this worked best. After that, do `nix build`, and try to execute `./result/bin/nv`. Once everything is loaded you can do `:Lazy`, where you see all yourplugins. Every dot that is blue means that the plugin was downloaded from github aka you need to add that plugin to your list. Once everything is done all the dots should be orange. Should you have installed everything but lazy is still downloading something, look at the "Custom patches" tab below.
+- runtimeDeps: This is all the external executables neovim will have access to. This is things like `tree-sitter` and your lsp's. Same here, look at [nixos search](https://search.nixos.org/packages?channel=unstable) and look for the executable. In my experience some lsp's have weird names so you might need to search a little. Feel free to use [my config](https://github.com/NicoElbers/nvim-config/blob/4e686f8fc2a2e0dd980998f4497005849bdb314d/flake.nix#L168-L207) as a starting point.
+
+The other options are hopefully explained well enough in the template. If not, feel free to make an issue and or pr.
+
+If you want to see what your config looks like, to find errors or just for fun, `vim.g.configpath` contains the location your patched config is currently located.
+
+<details><summary>Custom patches</summary>
+
+nv provides you with the possibility to define custom subsitutions (look at [how it works](#how-it-works) for more details). These can be used to change any lua string into any other lua string. A specialization of these are plugin subsitutions. These assume that whatever you're replacing is a url and will replace a bit of fluff around it to satisfy lazy.nvim.
+
+In most cases you're gonna want to use a plugin subsitution. You can generate these very easily WHEN I EXPOSE THE FUCKING FUNCTIONS IT'S NOT THAT MUCH WORK JUST DO IT. When you have them generated, you need to put them in `customSubs` in your flake. After this you should be good.
+
+In the cases that you want to use literal string replacement, a couple of things to note:
+
+- You can only replace lua strings (wrapped in `''`, `""` or `[[]]`), you can't change arbitrary characters.
+- Be careful what strings you're replacing. _Every_ lua string in your _entire_ config will be checked. Notably, this includes inside comments
+- The string you're replacing is matched fully. No substring matching, _every character has to match exactly_.
+- You cannot put code in your configuration. Everything you replace will be wrapped by `[[]]`, lua's multiline string. String replacment is only meant to pass values from nix to your configuration. If you want specific code to run when you're using nix, use the `set` function discussed above.
+- You _can_ escape the multiline string if you really want, I don't validate your input in any way, but I make 0 guarantees it'll work in the future.
+
+</details>
 
 ## Goals
 
@@ -214,17 +244,13 @@ Inside the directory where you have your configuration do `nix flake init -t git
 
 ## Limitations
 
-Currently `nv` only works for [lazy.nvim](https://github.com/folke/lazy.nvim) configurations. I might add support for plug in the future, however this is not a priority for the project.
-
-<!-- TODO: Verify -->
-
-You might experience issues with aliasing `nv` to `nvim` if you also have Neovim installed and on your path. Therefore it is not aliased by default.
-
-You might experience issues if you use [page](https://github.com/I60R/page) as it also provides a binary named `nv`.
+- Currently `nv` only works for [lazy.nvim](https://github.com/folke/lazy.nvim) configurations. I might add support for plug in the future, however this is not a priority for the project.
+- You might experience issues with aliasing `nv` to `nvim` if you also have Neovim installed and on your path. Therefore it is not aliased by default.
+- You might experience issues if you use [page](https://github.com/I60R/page) as it also provides a binary named `nv`.
 
 ## Roadmap
 
-- [ ] Make the lua parser smarter such that one line plugin url's no longer need to be wrapped
+- [ ] Make the lua parser smarter such that one line dependency plugin url's no longer need to be wrapped
 - [ ] Provide a way to iterate over your configuration quickly
   - This would mean that the underlying config patcher be exposed as a program for you to run, updating your settings but not adding new plugins
 - [ ] Add support for different package managers
@@ -232,3 +258,15 @@ You might experience issues if you use [page](https://github.com/I60R/page) as i
 - [ ] Provide a script that parses your config and makes the `flake.nix` for you, with plugins and all
 - [ ] Make a nixos module / home manager module
   - In my opinion this has friction with the goal of simplicity, as it detaches the Neovim configuration from the nv configuration. Unsure for now.
+
+## How it works
+
+## Blocks for release
+
+- [ ] The provided subPatches force you to download plugins. It should be optional depending on if the plugin is in your plugin list.
+- [ ] Exposing the subPatches functions to the user
+- [ ] A quicksetup section
+- [ ] Expanding in the [opening section](#nv-keep-your-lazy.nvim-config-in-lua)
+- [ ] Expanding in [why](#why)
+- [ ] Expand on [goals](#goals)
+- [ ] Expose the config path in `vim.g.configpath`
