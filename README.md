@@ -1,8 +1,8 @@
-# nv: keep your lazy.nvim config in lua
+# nv: keep your lazy.nvim config in Lua
 
 <!--toc:start-->
 
-- [nv: keep your lazy.nvim config in lua](#nv-keep-your-lazynvim-config-in-lua)
+- [nv: keep your lazy.nvim config in Lua](#nv-keep-your-lazynvim-config-in-lua)
   - [Why](#why)
   - [Installation](#installation)
     - [Setting up your config](#setting-up-your-config)
@@ -18,21 +18,25 @@
   - [Blocks for release](#blocks-for-release)
   <!--toc:end-->
 
-`nv` is a wrapper around Neovim that makes your lua configuration nix compatible. It makes the barrier to a working Neovim configuration on nix as small as possible for existing Neovim users.
+`nv` is a wrapper around Neovim that makes your Lua configuration nix compatible. It makes the barrier to a working Neovim configuration on nix as small as possible for existing Neovim users.
 
-As the creator of [nixCats](https://github.com/BirdeeHub/nixCats-nvim) aptly said, nix is for downloading and lua is for configuring. I am taking that idea further to having to change as little as possible to your existing configuration and getting all the benefits nix offers.
+As the creator of [nixCats](https://github.com/BirdeeHub/nixCats-nvim) aptly said, nix is for downloading and Lua is for configuring. I am taking that idea further by transforming your configuration to a nix compatible one at build time. Inside Lua, you have 0 extra dependencies, and as few changes as possible.
 
 `nv` provides a flake template that you can put inside your Neovim configuration. You have to make a couple minor adjustments to your configuration and specify what dependencies your configuration has and `nv` will do the rest.
 
 ## Why
 
-Primarily, for fun. Besides that because I have a use case that wasn't properly fulfilled by the alternatives I saw. I have a Neovim configuration I am very happy with. I don't want to convert it to nix like nixvim suggests and I also don't have the need for multiple configurations like nixCats offeres.
+For fun.
+
+Besides that, when I originally was looking into nix, my Neovim configuration was my big blocker. I had spent quite a bit of time on it and I really didn't want to rewrite it in nix, especially since that'd mean I couldn't use it as a normal configuration anymore. Then later I found nixCats, which is a great project, and that helped me to go to nix.
+
+Somewhere along the line, I had some problems with nixCats (completely my own fault), and somewhere around midnight I had a fun idea to just parse my configuration and patch in the plugin directories. A frankly insane 18 hours of programming later, I had some base concepts that worked, and I decided to go for it!
 
 ## Installation
 
 ### Setting up your config
 
-`nv` does it's best to work with existing lazy.nvim configurations, but it's not perfect. The setup you need to however, is minimal. There are 3 main limitations as of now:
+`nv` does its best to work with existing lazy.nvim configurations, but it's not perfect. The setup you need to however, is minimal. There are 3 main limitations as of now:
 
 1. Plugin dependencies must be wrapped in brackets `{}` to be correctly parsed.
 2. Plugins that install files, like mason, don't play nice with nix.
@@ -155,7 +159,7 @@ vim.opt.rtp:prepend(lazypath)
 
 This is downloading something imperatively, which we want to avoid on nix. Luckily this is super easy to change with our utility. The problem is what do we replace it with?
 
-This is another piece of sort of magic `nv` does. The lua string `"lazy.nvim-plugin-path"` is replaced with the appropriate path to the lazy.nvim plugin. This works because `nv` provides some default patches if they otherwise wouldn't work out of the box, among these I added the string `"lazy.nvim-plugin-path"` to be replaced. You can see all default patches in the [`subPatches.nix`](https://github.com/NicoElbers/nv/blob/main/subPatches.nix) file. You can also add your own, as you'll see a bit later.
+This is another piece of sort of magic `nv` does. The Lua string `"lazy.nvim-plugin-path"` is replaced with the appropriate path to the lazy.nvim plugin. This works because `nv` provides some default patches if they otherwise wouldn't work out of the box, among these I added the string `"lazy.nvim-plugin-path"` to be replaced. You can see all default patches in the [`subPatches.nix`](https://github.com/NicoElbers/nv/blob/main/subPatches.nix) file. You can also add your own, as you'll see a bit later.
 
 **Beware** if you turn off the `patchSubs` setting, this will no longer work.
 
@@ -222,16 +226,16 @@ If you want to see what your config looks like, to find errors or just for fun, 
 
 <details><summary>Custom patches</summary>
 
-nv provides you with the possibility to define custom subsitutions (look at [how it works](#how-it-works) for more details). These can be used to change any lua string into any other lua string. A specialization of these are plugin subsitutions. These assume that whatever you're replacing is a url and will replace a bit of fluff around it to satisfy lazy.nvim.
+nv provides you with the possibility to define custom subsitutions (look at [how it works](#how-it-works) for more details). These can be used to change any Lua string into any other Lua string. A specialization of these are plugin subsitutions. These assume that whatever you're replacing is a url and will replace a bit of fluff around it to satisfy lazy.nvim.
 
 In most cases you're gonna want to use a plugin subsitution. You can generate these very easily WHEN I EXPOSE THE FUCKING FUNCTIONS IT'S NOT THAT MUCH WORK JUST DO IT. When you have them generated, you need to put them in `customSubs` in your flake. After this you should be good.
 
 In the cases that you want to use literal string replacement, a couple of things to note:
 
-- You can only replace lua strings (wrapped in `''`, `""` or `[[]]`), you can't change arbitrary characters.
-- Be careful what strings you're replacing. _Every_ lua string in your _entire_ config will be checked. Notably, this includes inside comments
+- You can only replace Lua strings (wrapped in `''`, `""` or `[[]]`), you can't change arbitrary characters.
+- Be careful what strings you're replacing. _Every_ Lua string in your _entire_ config will be checked. Notably, this includes inside comments
 - The string you're replacing is matched fully. No substring matching, _every character has to match exactly_.
-- You cannot put code in your configuration. Everything you replace will be wrapped by `[[]]`, lua's multiline string. String replacment is only meant to pass values from nix to your configuration. If you want specific code to run when you're using nix, use the `set` function discussed above.
+- You cannot put code in your configuration. Everything you replace will be wrapped by `[[]]`, Lua's multiline string. String replacment is only meant to pass values from nix to your configuration. If you want specific code to run when you're using nix, use the `set` function discussed above.
 - You _can_ escape the multiline string if you really want, I don't validate your input in any way, but I make 0 guarantees it'll work in the future.
 
 </details>
@@ -242,22 +246,30 @@ In the cases that you want to use literal string replacement, a couple of things
 2. Keep Neovim fast
 3. Easy setup for anyone
 
+These are my goals in order.
+
+First and foremost I want you to have no limits within your configuration. You should be able to do whatever you want in non-nix, and do everything within the limits of nix while using nix. I don't want to enforce anything if I can avoid it.
+
+After that I want to keep Neovim fast. Everything should be done at build time, anything done at runtime will slow down neovim which I will avoid at all costs. My 29ms startup should stay 29ms under all circumstances.
+
+Last but not least, setup should be easy. Part of the reason I stared this project is that I had a hard time making my config nix compatible. You shouldn't need to know much if anything about nix to get `nv` to work.
+
 ## Limitations
 
 - Currently `nv` only works for [lazy.nvim](https://github.com/folke/lazy.nvim) configurations. I might add support for plug in the future, however this is not a priority for the project.
-- You might experience issues with aliasing `nv` to `nvim` if you also have Neovim installed and on your path. Therefore it is not aliased by default.
+- You might experience issues with aliasing `nv` to `nvim` if you also have Neovim installed and on your path. Therefore, it is not aliased by default.
 - You might experience issues if you use [page](https://github.com/I60R/page) as it also provides a binary named `nv`.
 
 ## Roadmap
 
-- [ ] Make the lua parser smarter such that one line dependency plugin url's no longer need to be wrapped
+- [ ] Make the Lua parser smarter such that one line dependency plugin url's no longer need to be wrapped
 - [ ] Provide a way to iterate over your configuration quickly
   - This would mean that the underlying config patcher be exposed as a program for you to run, updating your settings but not adding new plugins
 - [ ] Add support for different package managers
   - This should be pretty simple, however I only use lazy.nvim so it's not a priority for me
 - [ ] Provide a script that parses your config and makes the `flake.nix` for you, with plugins and all
 - [ ] Make a nixos module / home manager module
-  - In my opinion this has friction with the goal of simplicity, as it detaches the Neovim configuration from the nv configuration. Unsure for now.
+  - In my opinion this has friction with the goal of simplicity, as it detaches the Neovim configuration from the `nv` configuration. Unsure for now
 
 ## How it works
 
@@ -266,7 +278,7 @@ In the cases that you want to use literal string replacement, a couple of things
 - [ ] The provided subPatches force you to download plugins. It should be optional depending on if the plugin is in your plugin list.
 - [ ] Exposing the subPatches functions to the user
 - [ ] A quicksetup section
-- [ ] Expanding in the [opening section](#nv-keep-your-lazy.nvim-config-in-lua)
-- [ ] Expanding in [why](#why)
-- [ ] Expand on [goals](#goals)
-- [ ] Expose the config path in `vim.g.configpath`
+- [x] Expanding in the [opening section](#nv-keep-your-lazy.nvim-config-in-lua)
+- [x] Expanding in [why](#why)
+- [x] Expand on [goals](#goals)
+- [x] Expose the config path in `vim.g.configpath`
