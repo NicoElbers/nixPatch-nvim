@@ -218,7 +218,7 @@ The main things you need to look out for are `plugins`, `runtimeDeps` and `luaPa
 
 The other options are hopefully explained well enough in the template. If not, feel free to make an issue and or pr.
 
-If you want to see what your config looks like, to find errors or just for fun, `vim.g.configpath` contains the location your patched config is currently located.
+If you want to see what your config looks like, to find errors or just for fun, `vim.g.configdir` contains the location your patched config is located.
 
 <details><summary>Custom patches</summary>
 
