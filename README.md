@@ -71,11 +71,11 @@ dependencies = {
 
 For the other 2 limitations you do need to make some changes to your configuration, luckily you still don't have to change a thing when you're not on nix!
 
-The trick to this is very simple. `nv` does very little magic, but the one bit of magic it does set the global `vim.g.nixos` to `true`. This allows us to make a very useful utility function:
+The trick to this is very simple. `nv` does very little magic, but the one bit of magic it does set the global `vim.g.nix` to `true`. This allows us to make a very useful utility function:
 
 ```lua
 local set = function(nonNix, nix)
-    if vim.g.nixos == true then
+    if vim.g.nix == true then
         return nix
     else
         return nonNix
@@ -98,8 +98,8 @@ local M = {}
 -- snip
 
 -- Add boolean values to this table
-M.isNix = vim.g.nixos == true
-M.isNotNix = vim.g.nixos == nil
+M.isNix = vim.g.nix == true
+M.isNotNix = vim.g.nix == nil
 
 -- Add the set function to this table,
 -- we can now call it with require("utils").set(a, b)
@@ -153,7 +153,7 @@ Here is how that looks in practice:
 
 ```lua
 local set = function(nonNix, nix)
-    if vim.g.nixos == true then
+    if vim.g.nix == true then
         return nix
     else
         return nonNix
