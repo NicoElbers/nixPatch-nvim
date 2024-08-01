@@ -32,7 +32,50 @@ Besides that, when I originally was looking into nix, my Neovim configuration wa
 
 Somewhere along the line, I had some problems with nixCats (completely my own fault), and somewhere around midnight I had a fun idea to just parse my configuration and patch in the plugin directories. A frankly insane 18 hours of programming later, I had some base concepts that worked, and I decided to go for it!
 
-## Installation
+## Quick setup
+
+Your plugin dependencies must be wrapped by `{}`.
+Change:
+
+```lua
+return {
+  "plugin1",
+  dependencies = {
+    "plugin2",
+    "plugin3",
+  },
+}
+```
+
+into:
+
+```lua
+return {
+  "plugin1",
+  dependencies = {
+    {
+      "plugin2",
+    },
+    {
+      "plugin3",
+    },
+  },
+}
+```
+
+Disable plugins like `Mason` so they don't download things on nix.
+
+Clone the flake using `nix flake init -t github:NicoElbers/nv`.
+
+Set `luaPath` to the directory which contains your `init.lua`.
+
+Use [nixos search](https://search.nixos.org/packages?channel=unstable&from=-1&size=50&sort=relevance&type=packages&query=vimPlugins) to find all the plugins you're using and import them in `plugins` in the flake.
+
+Use [nixos search](https://search.nixos.org/packages?channel=unstable&from=-1&size=50&sort=relevance&type=packages) again to find all runtime dependencies (tree-sitter, lsp) and put them in `runtimeDeps`.
+
+For more detailed information, look at the section below.
+
+## Installation, the long version
 
 ### Setting up your config
 
@@ -277,7 +320,7 @@ Last but not least, setup should be easy. Part of the reason I stared this proje
 
 - [ ] The provided subPatches force you to download plugins. It should be optional depending on if the plugin is in your plugin list.
 - [ ] Exposing the subPatches functions to the user
-- [ ] A quicksetup section
+- [x] A quicksetup section
 - [x] Expanding in the [opening section](#nv-keep-your-lazy.nvim-config-in-lua)
 - [x] Expanding in [why](#why)
 - [x] Expand on [goals](#goals)
