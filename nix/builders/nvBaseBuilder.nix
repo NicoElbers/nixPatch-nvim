@@ -139,7 +139,7 @@ let
 
   customSubsPatched = 
     customSubs 
-    ++ lib.optionals patchSubs (pkgs.callPackage ./../../subPatches.nix {});
+    ++ lib.optionals patchSubs ((pkgs.callPackage ./../../subPatches.nix {}) plugins);
 
   luaConfig = patcher {
     inherit luaPath plugins name;

@@ -271,7 +271,7 @@ If you want to see what your config looks like, to find errors or just for fun, 
 
 nv provides you with the possibility to define custom subsitutions (look at [how it works](#how-it-works) for more details). These can be used to change any Lua string into any other Lua string. A specialization of these are plugin subsitutions. These assume that whatever you're replacing is a url and will replace a bit of fluff around it to satisfy lazy.nvim.
 
-In most cases you're gonna want to use a plugin subsitution. You can generate these very easily WHEN I EXPOSE THE FUCKING FUNCTIONS IT'S NOT THAT MUCH WORK JUST DO IT. When you have them generated, you need to put them in `customSubs` in your flake. After this you should be good.
+In most cases you're gonna want to use a plugin subsitution. You can generate these very easily using the functions provided by `patchUtils.nix` In the template they are already imported for you. Have a look at them to see how you use them. When you have them generated, you need to put them in `customSubs` in your flake. After this you should be good.
 
 In the cases that you want to use literal string replacement, a couple of things to note:
 
@@ -318,8 +318,8 @@ Last but not least, setup should be easy. Part of the reason I stared this proje
 
 ## Blocks for release
 
-- [ ] The provided subPatches force you to download plugins. It should be optional depending on if the plugin is in your plugin list.
-- [ ] Exposing the subPatches functions to the user
+- [x] The provided subPatches force you to download plugins. It should be optional depending on if the plugin is in your plugin list.
+- [x] Exposing the subPatches functions to the user
 - [x] A quicksetup section
 - [x] Expanding in the [opening section](#nv-keep-your-lazy.nvim-config-in-lua)
 - [x] Expanding in [why](#why)

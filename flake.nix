@@ -38,6 +38,9 @@
 
 
     configuration = { pkgs, ... }:
+    let
+      patchUtils = pkgs.callPackage ./patchUtils.nix {};
+    in 
     {
       # The path to your config
       luaPath = ./config;
@@ -211,9 +214,9 @@
 
       aliases = [ "vim" "vi" ];
 
-      customSubs = with pkgs.vimPlugins; [
+      customSubs = with pkgs.vimPlugins patchUtils; [
 
-        ];
+      ];
 
       settings = {
         withNodeJs = true;

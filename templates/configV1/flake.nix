@@ -50,6 +50,9 @@
     };
 
     configuration = { pkgs, ... }: 
+    let
+      patchUtils = pkgs.callPackage ./patchUtils.nix {};
+    in 
     {
       # The path to your neovim configuration.
       luaPath = ./.;
@@ -106,7 +109,7 @@
       #           For type "plugin" this is the plugin name
       # }
       # TODO: Expose functions to make this much easier on the user
-      customSubs = [ ];
+      customSubs = with pkgs.vimPlugins patchUtils; [ ];
 
       settings = {
         # Enable the NodeJs provider
