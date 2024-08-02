@@ -16,6 +16,8 @@
   - [Limitations](#limitations)
   - [Roadmap](#roadmap)
   - [How it works](#how-it-works)
+    - [Patching your config](#patching-your-config)
+    - [Zig](#zig)
   - [Blocks for release](#blocks-for-release)
   <!--toc:end-->
 
