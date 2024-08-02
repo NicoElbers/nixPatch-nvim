@@ -1,4 +1,4 @@
-{ lib, stdenvNoCC, makeWrapper, callPackage }:
+{ lib, stdenvNoCC, callPackage }:
 { patcher , nixpkgs }:
 {
   luaPath

@@ -4,7 +4,6 @@
   , stdenv
   , buildEnv
   , writeText
-  , writeTextFile
   , runCommand
   , python3
   , linkFarm
@@ -54,11 +53,11 @@ packDir = packages:
           cp --no-dereference ${grmr}/parser/*.so $out/parser
         '') treesitter_grammars;
 
-        builderText = (/* bash */''
+        builderText = /* bash */''
           #!/usr/bin/env bash
           source $stdenv/setup
           mkdir -p $out/parser
-        '') + (concatStringsSep "\n" builderLines);
+        '' + (concatStringsSep "\n" builderLines);
 
       in {
         name = "vimplugin-treesitter-grammar-ALL-INCLUDED";

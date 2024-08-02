@@ -1,4 +1,4 @@
-{ lib, pkgs, ... }:
+{ pkgs }:
 plugins: 
 let
   utils = pkgs.callPackage ./patchUtils.nix{};

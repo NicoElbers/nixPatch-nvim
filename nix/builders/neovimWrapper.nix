@@ -3,15 +3,9 @@
   , lib
   , makeWrapper
   , writeText
-  , nodePackages
-  , python3
   , callPackage
   , lndir
   , coreutils
-
-  , perl
-  , vimUtils
-  , neovimUtils
 }:
 neovim-unwrapped:
 let
@@ -30,10 +24,10 @@ let
     let
       rtp = (callPackage ./rtpBuilder.nix {}) neovim-unwrapped packpathDirs;
 
-      shellCode = builtins.concatStringsSep "\n" ([/*bash*/''
+      shellCode = builtins.concatStringsSep "\n" [/*bash*/''
         NVIM_WRAPPER_PATH_NIX="$(${coreutils}/bin/readlink -f "$0")"
         export NVIM_WRAPPER_PATH_NIX
-      '']);
+      ''];
       preWrapperShellFile = writeText "preNVWrapperShellCode" shellCode;
 
       generatedWrapperArgs = [ "--set" "VIMRUNTIME" "${rtp}" ];
