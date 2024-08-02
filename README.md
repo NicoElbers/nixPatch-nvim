@@ -4,7 +4,8 @@
 
 - [nv: keep your lazy.nvim config in Lua](#nv-keep-your-lazynvim-config-in-lua)
   - [Why](#why)
-  - [Installation](#installation)
+  - [Quick setup](#quick-setup)
+  - [Installation, the long version](#installation-the-long-version)
     - [Setting up your config](#setting-up-your-config)
       - [Setting up dependencies](#setting-up-dependencies)
       - [Utilities](#utilities)
@@ -353,6 +354,20 @@ Last but not least, setup should be easy. Part of the reason I stared this proje
   - In my opinion this has friction with the goal of simplicity, as it detaches the Neovim configuration from the `nv` configuration. Unsure for now
 
 ## How it works
+
+### Patching your config
+
+`nv` works very differently from other nix Neovim solutions I've seen. Instead of generating Lua from nix configuration or hijacking the package manager, `nv` patches your configuration at build time paths. Lazy.nvim expects either a url or a directory for any given plugin, so with a bit of clever parsing we can find the urls of your plugins and change them to
+
+But how does it know what urls to change? Wouldn't that be a lot of manual labor? Luckily, no. In nixpkgs vim plugin derivations are all put in one large file in a structured manner. This means that we can parse it quite easily. Combining this with a list of plugins you provide, we can link a url to a store path.
+
+Some plugins, like LuaSnip, don't work, for these exceptions we can make custom patches. If you look at the `subPatches.nix` file you'll find every custom patch I provide by default (you can disable these by setting `patchSubs` to false). Doing that in this repository has the nice advantage that once someone finds a faulty plugin, they can upstream their custom patch, and make it available for everyone.
+
+### Zig
+
+I chose to do the patching itself in Zig, not nix. Mainly because I've been really liking Zig lately, and I'm not confident I could do complex file parsing in nix. Another advantage of Zig is speed. If I time the patcher on my own config it takes about 0.1 second, which is pretty good I'd say. Right now, that speed doesn't make much of a difference, building the executable takes ~10 seconds (although only happens once) and setting up other things for Neovim takes a few more seconds, but it will make a difference in the future.
+
+One frustration I've heard is that iterating over your configuration is kind of annoying in nix. Rebuilding doesn't take ages, but long enough that it's frustrating. In the future, I plan to provide the patcher executable in some special "iteration" mode, where you can make changes and patch you config yourself. Then having that 0.1 second build time will not be that different from starting up Neovim normally.
 
 ## Blocks for release
 
