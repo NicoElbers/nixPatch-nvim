@@ -51,7 +51,7 @@
 
     configuration = { pkgs, ... }: 
     let
-      patchUtils = nv.patchUtils;
+      patchUtils = nv.patchUtils.${pkgs.system};
     in 
     {
       # The path to your neovim configuration.
