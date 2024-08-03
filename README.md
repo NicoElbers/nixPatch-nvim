@@ -370,13 +370,3 @@ Some plugins, like LuaSnip, don't work, for these exceptions we can make custom 
 I chose to do the patching itself in Zig, not nix. Mainly because I've been really liking Zig lately, and I'm not confident I could do complex file parsing in nix. Another advantage of Zig is speed. If I time the patcher on my own config it takes about 0.1 second, which is pretty good I'd say. Right now, that speed doesn't make much of a difference, building the executable takes ~10 seconds (although only happens once) and setting up other things for Neovim takes a few more seconds, but it will make a difference in the future.
 
 One frustration I've heard is that iterating over your configuration is kind of annoying in nix. Rebuilding doesn't take ages, but long enough that it's frustrating. In the future, I plan to provide the patcher executable in some special "iteration" mode, where you can make changes and patch you config yourself. Then having that 0.1 second build time will not be that different from starting up Neovim normally.
-
-## Blocks for release
-
-- [x] The provided subPatches force you to download plugins. It should be optional depending on if the plugin is in your plugin list.
-- [x] Exposing the subPatches functions to the user
-- [x] A quicksetup section
-- [x] Expanding in the [opening section](#nv-keep-your-lazy.nvim-config-in-lua)
-- [x] Expanding in [why](#why)
-- [x] Expand on [goals](#goals)
-- [x] Expose the config path in `vim.g.configpath`
