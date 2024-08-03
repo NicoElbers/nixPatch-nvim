@@ -253,6 +253,7 @@
     };
 
     inherit configWrapper;
+    patchUtils = pkgs.callPackage ./patchUtils.nix {};
 
     devShells.default = with pkgs; mkShell {
       packages = [
