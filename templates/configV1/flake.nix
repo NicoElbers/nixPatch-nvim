@@ -94,19 +94,16 @@
       # Must be provided as a list of strings.
       extraConfig = [ ];
 
-      # Custom subsitutions you want the patcher to make. They must be provided
-      # in the following format
-      # {
-      #   type = "string" or "plugin";
-      #   from = string literal or plugin url
-      #   to = The string literal replacing "from"
-      #   extra = for type "string" this is the "key" of the string as seen here:
-      #           `key = "string"`
-      #           leave as null if you don't care about the key.
-      #           For type "plugin" this is the plugin name
-      # }
-      # TODO: Expose functions to make this much easier on the user
-      customSubs = with pkgs.vimPlugins patchUtils; [ ];
+      # Custom subsitutions you want the patcher to make. Custom subsitutions 
+      # can be generated using
+      customSubs = with pkgs.vimPlugins patchUtils; [];
+            # For example, if you want to add a plugin with the short url
+            # "cool/plugin" which is in nixpkgs as plugin-nvim you would do:
+            # ++ (patchUtils.githubUrlSub "cool/plugin" plugin-nvim);
+            # If you would want to replace the string "replace_me" with "replaced" 
+            # you would have to do:
+            # ++ (patchUtils.stringSub "replace_me" "replaced")
+            # For more examples look here: https://github.com/NicoElbers/nv/blob/main/subPatches.nix
 
       settings = {
         # Enable the NodeJs provider

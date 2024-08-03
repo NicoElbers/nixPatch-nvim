@@ -211,9 +211,14 @@
 
       aliases = [ "vim" "vi" ];
 
-      customSubs = with pkgs.vimPlugins patchUtils; [
-
-      ];
+      customSubs = with pkgs.vimPlugins patchUtils; [];
+            # For example, if you want to add a plugin with the short url
+            # "cool/plugin" which is in nixpkgs as plugin-nvim you would do:
+            # ++ (patchUtils.githubUrlSub "cool/plugin" plugin-nvim);
+            # If you would want to replace the string "replace_me" with "replaced" 
+            # you would have to do:
+            # ++ (patchUtils.stringSub "replace_me" "replaced")
+            # For more examples look here: https://github.com/NicoElbers/nv/blob/main/subPatches.nix
 
       settings = {
         withNodeJs = true;
