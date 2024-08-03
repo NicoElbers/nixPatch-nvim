@@ -83,8 +83,6 @@
       extraPython3WrapperArgs = [ ];
 
       # Extra lua packages for the neovim lua runtime.
-      # Extra packages that should be available at build time for packages.
-      propagatedBuildInputs = [ ]; # FIXME: why is this not being used????
       luaPackages = [ ];
 
       # Extra shared libraries available at runtime.

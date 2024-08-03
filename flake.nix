@@ -206,9 +206,6 @@
       # Extra Lua packages (must be functions returning lists)
       extraLuaPackages = with pkgs; [ ];
 
-      # Dependencies available at build time
-      propagatedBuildInputs = with pkgs; [ ];
-
       # Shared libraries available at run time
       sharedLibraries = with pkgs; [ ];
 

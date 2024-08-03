@@ -34,7 +34,6 @@ let
 
     luaPackages = [ ];
 
-    propagatedBuildInputs = [ ];
     sharedLibraries = [ ];
 
     extraConfig = [ ];
