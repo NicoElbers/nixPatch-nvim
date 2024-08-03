@@ -32,7 +32,7 @@ let
     python3Packages = [ ];
     extraPython3WrapperArgs = [ ];
 
-    luaPackages = [ ]; # FIXME: why is this not being used????
+    luaPackages = [ ];
 
     propagatedBuildInputs = [ ];
     sharedLibraries = [ ];
@@ -63,7 +63,7 @@ let
     luaPath plugins runtimeDeps extraConfig
     environmentVariables python3Packages 
     extraPython3WrapperArgs customSubs aliases
-    extraWrapperArgs sharedLibraries;
+    extraWrapperArgs sharedLibraries luaPackages;
 
   inherit (finalSettings)
     withNodeJs withRuby withPerl withPython3
@@ -79,32 +79,6 @@ let
   getEnv = env:  lib.flatten 
     (lib.mapAttrsToList (n: v: [ "--set" "${n}" "${v}" ]) env);
  
-  wrapperArgs = 
-    let
-      binPath = lib.makeBinPath (runtimeDeps
-        ++ lib.optionals withNodeJs 
-        [ pkgs.nodejs ]
-        ++ lib.optionals withRuby
-        [ pkgs.ruby ]
-        ++ lib.optionals withPython3
-        [ pkgs.python3 ]);
-        
-    in 
-    getEnv environmentVariables
-    ++
-    lib.optionals (configDirName != null && configDirName != "nvim")
-    [ "--set" "NVIM_APPNAME" "${configDirName}" ]
-    ++ lib.optionals (runtimeDeps != [])
-    [ "--${appendPathPos}" "PATH" ":" "${binPath}" ]
-    ++ lib.optionals (sharedLibraries != [])
-    [ "--${appendLinkPos}" "PATH" ":" "${lib.makeBinPath sharedLibraries}" ]
-    ++
-    (
-     if builtins.isList extraWrapperArgs then extraWrapperArgs 
-     else if builtins.isString then [extraWrapperArgs]
-     else throw "extraWrapperArgs should be a string or list of strings"
-    );
-
   mappedPlugins = map (p: { plugin = p; optional = true; }) plugins;
 
   packpathDirs.packages = 
@@ -136,6 +110,39 @@ let
   };
 
   perlEnv = pkgs.perl.withPackages (p: [ p.NeovimExt p.Appcpanminus ]);
+
+  luaEnv = neovim.lua.withPackages (utils.combineFns luaPackages);
+
+  wrapperArgs = 
+    let
+      binPath = lib.makeBinPath (runtimeDeps
+        ++ lib.optionals withNodeJs 
+        [ pkgs.nodejs ]
+        ++ lib.optionals withRuby
+        [ pkgs.ruby ]
+        ++ lib.optionals withPython3
+        [ pkgs.python3 ]);
+        
+    in 
+    getEnv environmentVariables
+    ++
+    lib.optionals (configDirName != null && configDirName != "nvim")
+    [ "--set" "NVIM_APPNAME" "${configDirName}" ]
+    ++ lib.optionals (runtimeDeps != [])
+    [ "--${appendPathPos}" "PATH" ":" "${binPath}" ]
+    ++ lib.optionals (sharedLibraries != [])
+    [ "--${appendLinkPos}" "PATH" ":" "${lib.makeBinPath sharedLibraries}" ]
+    ++ lib.optionals (luaEnv != null) 
+    [
+      "--prefix" "LUA_PATH" ";" (neovim.lua.pkgs.luaLib.genLuaPathAbsStr luaEnv)
+      "--prefix" "LUA_CPATH" ";" (neovim.lua.pkgs.luaLib.genLuaCPathAbsStr luaEnv)
+    ]
+    ++
+    (
+     if builtins.isList extraWrapperArgs then extraWrapperArgs 
+     else if builtins.isString then [extraWrapperArgs]
+     else throw "extraWrapperArgs should be a string or list of strings"
+    );
 
   customSubsPatched = 
     customSubs 
