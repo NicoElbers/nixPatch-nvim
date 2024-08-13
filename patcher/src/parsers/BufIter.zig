@@ -545,3 +545,17 @@ test "Different string characters, no valid string" {
     const expected = null;
     try expectEqual(expected, iter.peekNextLuaString());
 }
+
+test "poorly ended multiline" {
+    const in = "[[ hello ]";
+    var iter = init(in);
+    const expected = null;
+    try expectEqual(expected, iter.peekNextLuaString());
+}
+
+test "poorly started multiline" {
+    const in = "[ hello ]]";
+    var iter = init(in);
+    const expected = null;
+    try expectEqual(expected, iter.peekNextLuaString());
+}
