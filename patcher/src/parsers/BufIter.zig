@@ -62,15 +62,15 @@ pub fn initBack(buf: []const u8) Self {
     };
 }
 
-pub fn isDone(self: *Self) bool {
+pub fn isDone(self: Self) bool {
     return self.ptr < 0 or self.ptr >= self.buf.len;
 }
 
-pub fn isDoneReverse(self: *Self) bool {
+pub fn isDoneReverse(self: Self) bool {
     return self.ptr <= 0 or self.ptr > self.buf.len;
 }
 
-pub fn peek(self: *Self) ?u8 {
+pub fn peek(self: Self) ?u8 {
     if (self.isDone()) return null;
     return self.buf[self.ptr];
 }
@@ -80,7 +80,7 @@ pub fn next(self: *Self) ?u8 {
     return self.peek();
 }
 
-pub fn peekBack(self: *Self) ?u8 {
+pub fn peekBack(self: Self) ?u8 {
     if (self.isDoneReverse()) return null;
     return self.buf[self.ptr - 1];
 }
@@ -156,7 +156,7 @@ pub fn nextUntilBefore(self: *Self, until: []const u8) ?[]const u8 {
     return str;
 }
 
-pub fn peekUntilBefore(self: *Self, until: []const u8) ?[]const u8 {
+pub fn peekUntilBefore(self: Self, until: []const u8) ?[]const u8 {
     if ((self.ptr + until.len) >= self.buf.len) return null;
 
     for ((self.ptr)..(self.buf.len - until.len + 1)) |ptr| {
@@ -174,7 +174,7 @@ pub fn nextUntilAfter(self: *Self, until: []const u8) ?[]const u8 {
     return str;
 }
 
-pub fn peekUntilAfter(self: *Self, until: []const u8) ?[]const u8 {
+pub fn peekUntilAfter(self: Self, until: []const u8) ?[]const u8 {
     if ((self.ptr + until.len) >= self.buf.len) return null;
 
     for ((self.ptr)..(self.buf.len - until.len + 1)) |ptr| {
