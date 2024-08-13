@@ -6,12 +6,50 @@ const Self = @This();
 
 buf: []const u8,
 ptr: usize = 0,
+lua_string_cache: ?LuaStringCache = null,
+
+const LuaStringCache = struct {
+    ptr_check: usize,
+
+    lua_string_type: LuaStringType,
+    next_lua_string_start_on: usize,
+    next_lua_string_end: ?usize,
+
+    pub const LuaStringType = enum {
+        singleQuote,
+        doubleQuote,
+        multiLine,
+    };
+
+    pub fn isValid(self: LuaStringCache, ptr: usize) bool {
+        return self.ptr_check == ptr;
+    }
+
+    pub fn getNextLUaStringType(self: LuaStringCache, ptr: usize) ?LuaStringType {
+        if (!self.isValid(ptr)) return null;
+
+        return self.lua_string_type;
+    }
+
+    pub fn getNextLuaStringOpeningOn(self: LuaStringCache, ptr: usize) ?usize {
+        if (!self.isValid(ptr)) return null;
+
+        return self.next_lua_string_start_on;
+    }
+
+    pub fn getNextLuaStringEnd(self: LuaStringCache, ptr: usize) ?usize {
+        if (!self.isValid(ptr)) return null;
+
+        return self.next_lua_string_end;
+    }
+};
 
 /// A call to next will show the first character
 pub fn init(buf: []const u8) Self {
     return Self{
         .buf = buf,
         .ptr = 0,
+        .lua_string_cache = null,
     };
 }
 
@@ -20,18 +58,19 @@ pub fn initBack(buf: []const u8) Self {
     return Self{
         .buf = buf,
         .ptr = buf.len,
+        .lua_string_cache = null,
     };
 }
 
-pub fn isDone(self: Self) bool {
+pub fn isDone(self: *Self) bool {
     return self.ptr < 0 or self.ptr >= self.buf.len;
 }
 
-pub fn isDoneReverse(self: Self) bool {
+pub fn isDoneReverse(self: *Self) bool {
     return self.ptr <= 0 or self.ptr > self.buf.len;
 }
 
-pub fn peek(self: Self) ?u8 {
+pub fn peek(self: *Self) ?u8 {
     if (self.isDone()) return null;
     return self.buf[self.ptr];
 }
@@ -41,7 +80,7 @@ pub fn next(self: *Self) ?u8 {
     return self.peek();
 }
 
-pub fn peekBack(self: Self) ?u8 {
+pub fn peekBack(self: *Self) ?u8 {
     if (self.isDoneReverse()) return null;
     return self.buf[self.ptr - 1];
 }
@@ -53,7 +92,7 @@ pub fn back(self: *Self) ?u8 {
     return self.peekBack();
 }
 
-pub fn peekNextLuaString(self: Self) ?[]const u8 {
+pub fn peekNextLuaString(self: *Self) ?[]const u8 {
     const start = self.findLuaStringOpeningAfter() orelse return null;
     const stop = self.findLuaStringClosingOn() orelse return null;
     return self.buf[start..stop];
@@ -63,7 +102,7 @@ pub fn peekNextLuaString(self: Self) ?[]const u8 {
 ///    "String"
 ///    ^
 ///   Until this is returned
-pub fn peekNextUntilLuaString(self: Self) ?[]const u8 {
+pub fn peekNextUntilLuaString(self: *Self) ?[]const u8 {
     if (self.isDone()) return null;
     const string_start = self.findLuaStringOpeningOn() orelse return null;
     return self.buf[self.ptr..string_start];
@@ -78,7 +117,7 @@ pub fn peekNextUntilLuaString(self: Self) ?[]const u8 {
 ///   {string} is the lua string,
 ///
 /// It returns a slice from self.ptr to the first character of the key
-pub fn peekUntilNextLuaStringKey(self: Self, key: []const u8) ?[]const u8 {
+pub fn peekUntilNextLuaStringKey(self: *Self, key: []const u8) ?[]const u8 {
     const before_string = self.peekNextUntilLuaString() orelse return null;
 
     if (before_string.len <= key.len) return null;
@@ -117,7 +156,7 @@ pub fn nextUntilBefore(self: *Self, until: []const u8) ?[]const u8 {
     return str;
 }
 
-pub fn peekUntilBefore(self: Self, until: []const u8) ?[]const u8 {
+pub fn peekUntilBefore(self: *Self, until: []const u8) ?[]const u8 {
     if ((self.ptr + until.len) >= self.buf.len) return null;
 
     for ((self.ptr)..(self.buf.len - until.len + 1)) |ptr| {
@@ -135,7 +174,7 @@ pub fn nextUntilAfter(self: *Self, until: []const u8) ?[]const u8 {
     return str;
 }
 
-pub fn peekUntilAfter(self: Self, until: []const u8) ?[]const u8 {
+pub fn peekUntilAfter(self: *Self, until: []const u8) ?[]const u8 {
     if ((self.ptr + until.len) >= self.buf.len) return null;
 
     for ((self.ptr)..(self.buf.len - until.len + 1)) |ptr| {
@@ -168,29 +207,50 @@ fn isWhitespace(char: u8) bool {
     return char == ' ' or char == '\t';
 }
 
-fn findLuaStringOpeningOn(self: Self) ?usize {
+fn findLuaStringOpeningOn(self: *Self) ?usize {
     if (self.isDone()) {
         return null;
     }
 
+    if (self.lua_string_cache) |cache| {
+        if (cache.getNextLuaStringOpeningOn(self.ptr)) |start_on| {
+            return start_on;
+        }
+    }
+
     var iter = init(self.buf[self.ptr..]);
 
+    var string_type: ?LuaStringCache.LuaStringType = null;
     while (iter.next()) |char| {
-        if (char == '\'') break;
-
-        if (char == '"') break;
-
-        if (char == '[' and iter.peek() != null and iter.peek() == '[')
+        if (char == '\'') {
+            string_type = .singleQuote;
             break;
+        }
+
+        if (char == '"') {
+            string_type = .doubleQuote;
+            break;
+        }
+
+        if (char == '[' and iter.peek() != null and iter.peek() == '[') {
+            string_type = .multiLine;
+            break;
+        }
     }
 
     if (iter.isDone()) {
         return null;
     } else {
+        self.lua_string_cache = LuaStringCache{
+            .ptr_check = self.ptr,
+            .lua_string_type = string_type.?,
+            .next_lua_string_start_on = self.ptr + iter.ptr - 1,
+            .next_lua_string_end = null,
+        };
         return self.ptr + iter.ptr - 1;
     }
 }
-fn findLuaStringOpeningAfter(self: Self) ?usize {
+fn findLuaStringOpeningAfter(self: *Self) ?usize {
     const ptr = self.findLuaStringOpeningOn() orelse return null;
     if (self.buf[ptr] == '[') {
         return ptr + 2;
@@ -199,32 +259,42 @@ fn findLuaStringOpeningAfter(self: Self) ?usize {
     }
 }
 
-fn findLuaStringClosingOn(self: Self) ?usize {
+fn findLuaStringClosingOn(self: *Self) ?usize {
     if (self.isDone()) {
         return null;
     }
 
+    if (self.lua_string_cache) |cache| {
+        if (cache.getNextLuaStringEnd(self.ptr)) |end| {
+            return end;
+        }
+    }
+
     const start = self.findLuaStringOpeningAfter() orelse return null;
+    assert(self.lua_string_cache != null); // The cache must exist after finding the opening
+    var cache = &self.lua_string_cache.?;
+
     var iter = init(self.buf[start..]);
 
     while (iter.next()) |char| {
-        if (char == '\'') break;
+        if (char == '\'' and cache.lua_string_type == .singleQuote) break;
 
-        if (char == '"') break;
+        if (char == '"' and cache.lua_string_type == .doubleQuote) break;
 
-        if (char == ']' and iter.peek() != null and iter.peek() == ']') {
+        if (char == ']' and iter.peek() != null and iter.peek() == ']' and
+            cache.lua_string_type == .multiLine)
             break;
-        }
     }
 
     if (iter.isDone() and iter.ptr != iter.buf.len) {
         return null;
     } else {
-        return start + iter.ptr - 1;
+        cache.next_lua_string_end = (start + iter.ptr - 1);
+        return cache.next_lua_string_end;
     }
 }
 
-fn findLuaStringClosingAfter(self: Self) ?usize {
+fn findLuaStringClosingAfter(self: *Self) ?usize {
     const ptr = self.findLuaStringClosingOn() orelse return null;
     if (self.buf[ptr] == ']') {
         return ptr + 2;
@@ -460,4 +530,18 @@ test "nextUntilBefore larger than str" {
     const in = "-";
     var iter = init(in);
     try expectEqual(null, iter.nextUntilBefore("||"));
+}
+
+test "Different string characters, valid string" {
+    const in = "[[ \" ' ]]";
+    var iter = init(in);
+    const expected = " \" ' ";
+    try expectEqualStrings(expected, iter.peekNextLuaString() orelse return error.failed);
+}
+
+test "Different string characters, no valid string" {
+    const in = "]] \" ' [[";
+    var iter = init(in);
+    const expected = null;
+    try expectEqual(expected, iter.peekNextLuaString());
 }
