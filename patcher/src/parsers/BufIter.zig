@@ -81,8 +81,12 @@ pub fn next(self: *Self) ?u8 {
 }
 
 pub fn peekBack(self: Self) ?u8 {
-    if (self.isDoneReverse()) return null;
-    return self.buf[self.ptr - 1];
+    return self.peekBackBy(1);
+}
+
+pub fn peekBackBy(self: Self, by: usize) ?u8 {
+    if (self.ptr < by) return null;
+    return self.buf[self.ptr - by];
 }
 
 pub fn back(self: *Self) ?u8 {
@@ -277,13 +281,17 @@ fn findLuaStringClosingOn(self: *Self) ?usize {
     var iter = init(self.buf[start..]);
 
     while (iter.next()) |char| {
-        if (char == '\'' and cache.lua_string_type == .singleQuote) break;
+        switch (cache.lua_string_type) {
+            .singleQuote => if (char != '\'') continue,
+            .doubleQuote => if (char != '\"') continue,
+            .multiLine => if (char != ']' or iter.peek() != ']') continue,
+        }
 
-        if (char == '"' and cache.lua_string_type == .doubleQuote) break;
+        // Make sure the closing character is not escaped AND
+        // that the escape is not escaped
+        if (iter.peekBackBy(2) == '\\' and iter.peekBackBy(3) != '\\') continue;
 
-        if (char == ']' and iter.peek() != null and iter.peek() == ']' and
-            cache.lua_string_type == .multiLine)
-            break;
+        break;
     }
 
     if (iter.isDone() and iter.ptr != iter.buf.len) {
@@ -558,4 +566,18 @@ test "poorly started multiline" {
     var iter = init(in);
     const expected = null;
     try expectEqual(expected, iter.peekNextLuaString());
+}
+
+test "escaped double quote in string" {
+    const in = "\" \\\" \""; // convertes to " \" "
+    var iter = init(in);
+    const expected = " \\\" ";
+    try expectEqualStrings(expected, iter.peekNextLuaString() orelse return error.failed);
+}
+
+test "not escaped double quote in string" {
+    const in = "\" \\\\\" \""; // converts to " \\" "
+    var iter = init(in);
+    const expected = " \\\\";
+    try expectEqualStrings(expected, iter.peekNextLuaString() orelse return error.failed);
 }
