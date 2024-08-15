@@ -47,24 +47,23 @@ let
 
       inherit wrapRc generatedWrapperArgs;
 
-      postBuild = lib.optionalString stdenv.isLinux ''
-        rm $out/share/applications/nvim.desktop
+      postBuild = lib.optionalString stdenv.isLinux /*bash*/ ''
+        mkdir -p $out/share/applications
         substitute ${neovim-unwrapped}/share/applications/nvim.desktop $out/share/applications/${name}.desktop \
               --replace-fail 'Name=Neovim' 'Name=${name}'\
               --replace-fail 'TryExec=nvim' 'TryExec=${name}'\
-              --replace-fail 'Exec=nvim %F' 'Exec=${name} %F'
+              --replace-fail 'Exec=nvim %F' 'Exec=${name} %F'\
+              --replace-fail 'Icon=nvim' 'Icon=${neovim-unwrapped}/share/icons/hicolor/128x128/apps/nvim.png'
+
+        echo "replaced desktop"
       ''
-      + lib.optionalString (aliases != null)
-      (builtins.concatStringsSep "\n" (builtins.map (alias: ''
-        ln -s $out/bin/${name} $out/bin/${alias}
-      '') aliases))
       + lib.optionalString (manifestRc != null) (let
         manifestWrapperArgs = 
           [ "${neovim-unwrapped}/bin/nvim" "${placeholder "out"}/bin/nvim-wrapper" ]
           ++ finalAttrs.generatedWrapperArgs;
-      in ''
-        # Copies straight from nixpkgs, things don't work without it
-
+      in /*bash*/ ''
+        # Copied straight from nixpkgs, not 100% certain what it does
+        # but no need to remove it
         echo "Generating remote plugin manifest"
         export NVIM_RPLUGIN_MANIFEST=$out/rplugin.vim
         makeWrapper ${lib.escapeShellArgs manifestWrapperArgs} ${wrapperArgsStr}
@@ -97,7 +96,7 @@ let
         rm "${placeholder "out"}/bin/nvim-wrapper"
       '')
       + /* bash */ ''
-        rm $out/bin/nvim
+        # rm $out/bin/nvim
         touch $out/rplugin.vim
 
         echo "Looking for lua dependencies..."
@@ -121,18 +120,12 @@ let
         tail +2 ${placeholder "out"}/bin/${name} >> $BASHCACHE
         cat $BASHCACHE > ${placeholder "out"}/bin/${name}
         rm $BASHCACHE
-      '';
-
-      buildPhase = ''
-        runHook preBuild
-
-        mkdir -p $out
-        for i in ${neovim-unwrapped}; do 
-          lndir -silent $i $out
-        done
-        
-        runHook postBuild
-      '';
+      ''
+      # Finally, symlink some aliases
+      + lib.optionalString (aliases != null)
+      (builtins.concatStringsSep "\n" (builtins.map (alias: /*bash*/ ''
+        ln -s $out/bin/${name} $out/bin/${alias}
+      '') aliases));
 
       preferLocalBuild = true;
       nativeBuildInputs = [ makeWrapper lndir ];

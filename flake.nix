@@ -209,7 +209,7 @@
       # Shared libraries available at run time
       sharedLibraries = with pkgs; [ ];
 
-      aliases = [ "vim" "vi" ];
+      aliases = [ "vim" "vi" "nvim" ];
 
       customSubs = with pkgs.vimPlugins patchUtils; [];
             # For example, if you want to add a plugin with the short url
