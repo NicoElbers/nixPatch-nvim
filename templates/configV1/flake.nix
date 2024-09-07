@@ -96,7 +96,7 @@
 
       # Custom subsitutions you want the patcher to make. Custom subsitutions 
       # can be generated using
-      customSubs = with pkgs.vimPlugins patchUtils; [];
+      customSubs = with patchUtils; [];
             # For example, if you want to add a plugin with the short url
             # "cool/plugin" which is in nixpkgs as plugin-nvim you would do:
             # ++ (patchUtils.githubUrlSub "cool/plugin" plugin-nvim);
