@@ -588,3 +588,235 @@ test "cmp-nvim-lsp failing in config" {
 
     try std.testing.expectEqualStrings(expected, out_buf);
 }
+
+test "contex-aware-wrapping wrapped dependency" {
+    const alloc = std.testing.allocator;
+
+    const in =
+        \\"plugin/url",
+        \\dependencies = {
+        \\    { "plugin/url" },
+        \\}
+    ;
+
+    const expected =
+        \\dir = [[plugin/path]], name = [[pname]],
+        \\dependencies = {
+        \\    { dir = [[plugin/path]], name = [[pname]] },
+        \\}
+    ;
+
+    const subs: []const Substitution = &.{
+        try Substitution.initUrlSub(
+            alloc,
+            "plugin/url",
+            "plugin/name",
+            "pname",
+        ),
+    };
+    defer for (subs) |sub| sub.deinit(alloc);
+
+    const out_buf = try parseLuaFile(alloc, in, subs);
+    defer alloc.free(out_buf);
+
+    try std.testing.expectEqualStrings(expected, out_buf);
+}
+
+test "contex-aware-wrapping unwrapped single dependency" {
+    const alloc = std.testing.allocator;
+
+    const in =
+        \\"plugin/url",
+        \\dependencies = {
+        \\    "plugin/url",
+        \\}
+    ;
+
+    const expected =
+        \\dir = [[plugin/path]], name = [[pname]],
+        \\dependencies = {
+        \\    dir = [[plugin/path]], name = [[pname]],
+        \\}
+    ;
+
+    const subs: []const Substitution = &.{
+        try Substitution.initUrlSub(
+            alloc,
+            "plugin/url",
+            "plugin/name",
+            "pname",
+        ),
+    };
+    defer for (subs) |sub| sub.deinit(alloc);
+
+    const out_buf = try parseLuaFile(alloc, in, subs);
+    defer alloc.free(out_buf);
+
+    try std.testing.expectEqualStrings(expected, out_buf);
+}
+
+test "contex-aware-wrapping unwrapped multiple dependencies" {
+    const alloc = std.testing.allocator;
+
+    const in =
+        \\"plugin/url",
+        \\dependencies = {
+        \\    "plugin/url",
+        \\    "plugin/url",
+        \\}
+    ;
+
+    const expected =
+        \\dir = [[plugin/path]], name = [[pname]],
+        \\dependencies = {
+        \\    { dir = [[plugin/path]], name = [[pname]] },
+        \\    { dir = [[plugin/path]], name = [[pname]] },
+        \\}
+    ;
+
+    const subs: []const Substitution = &.{
+        try Substitution.initUrlSub(
+            alloc,
+            "plugin/url",
+            "plugin/name",
+            "pname",
+        ),
+    };
+    defer for (subs) |sub| sub.deinit(alloc);
+
+    const out_buf = try parseLuaFile(alloc, in, subs);
+    defer alloc.free(out_buf);
+
+    try std.testing.expectEqualStrings(expected, out_buf);
+}
+
+test "contex-aware-wrapping mixed multiple dependencies" {
+    const alloc = std.testing.allocator;
+
+    const in =
+        \\"plugin/url",
+        \\dependencies = {
+        \\    "plugin/url",
+        \\    { "plugin/url" },
+        \\    "plugin/url",
+        \\    { "plugin/url" },
+        \\    "plugin/url",
+        \\}
+    ;
+
+    const expected =
+        \\dir = [[plugin/path]], name = [[pname]],
+        \\dependencies = {
+        \\    { dir = [[plugin/path]], name = [[pname]] },
+        \\    { dir = [[plugin/path]], name = [[pname]] },
+        \\    { dir = [[plugin/path]], name = [[pname]] },
+        \\    { dir = [[plugin/path]], name = [[pname]] },
+        \\    { dir = [[plugin/path]], name = [[pname]] },
+        \\}
+    ;
+
+    const subs: []const Substitution = &.{
+        try Substitution.initUrlSub(
+            alloc,
+            "plugin/url",
+            "plugin/name",
+            "pname",
+        ),
+    };
+    defer for (subs) |sub| sub.deinit(alloc);
+
+    const out_buf = try parseLuaFile(alloc, in, subs);
+    defer alloc.free(out_buf);
+
+    try std.testing.expectEqualStrings(expected, out_buf);
+}
+
+test "contex-aware-wrapping single unwrapped single extensive multiple dependencies" {
+    const alloc = std.testing.allocator;
+
+    const in =
+        \\"plugin/url",
+        \\dependencies = {
+        \\    "plugin/url",
+        \\    { 
+        \\        "plugin/url",
+        \\        opts = {},
+        \\    },
+        \\}
+    ;
+
+    const expected =
+        \\dir = [[plugin/path]], name = [[pname]],
+        \\dependencies = {
+        \\    { dir = [[plugin/path]], name = [[pname]] },
+        \\    { 
+        \\        dir = [[plugin/path]], name = [[pname]],
+        \\        opts = {},
+        \\    },
+        \\}
+    ;
+
+    const subs: []const Substitution = &.{
+        try Substitution.initUrlSub(
+            alloc,
+            "plugin/url",
+            "plugin/name",
+            "pname",
+        ),
+    };
+    defer for (subs) |sub| sub.deinit(alloc);
+
+    const out_buf = try parseLuaFile(alloc, in, subs);
+    defer alloc.free(out_buf);
+
+    try std.testing.expectEqualStrings(expected, out_buf);
+}
+
+test "contex-aware-wrapping nested dependencies" {
+    const alloc = std.testing.allocator;
+
+    const in =
+        \\"plugin/url",
+        \\dependencies = {
+        \\    "plugin/url",
+        \\    { 
+        \\        "plugin/url",
+        \\        opts = {},
+        \\        dependencies = {
+        \\            "plugin/url",
+        \\            "plugin/url",
+        \\        }
+        \\    },
+        \\}
+    ;
+
+    const expected =
+        \\dir = [[plugin/path]], name = [[pname]],
+        \\dependencies = {
+        \\    { dir = [[plugin/path]], name = [[pname]] },
+        \\    { 
+        \\        dir = [[plugin/path]], name = [[pname]],
+        \\        opts = {},
+        \\        dependencies = {
+        \\            { dir = [[plugin/path]], name = [[pname]] },
+        \\            { dir = [[plugin/path]], name = [[pname]] },
+        \\        }
+        \\    },
+        \\}
+    ;
+
+    const subs: []const Substitution = &.{
+        try Substitution.initUrlSub(
+            alloc,
+            "plugin/url",
+            "plugin/name",
+            "pname",
+        ),
+    };
+    defer for (subs) |sub| sub.deinit(alloc);
+
+    const out_buf = try parseLuaFile(alloc, in, subs);
+    defer alloc.free(out_buf);
+
+    try std.testing.expectEqualStrings(expected, out_buf);
+}
