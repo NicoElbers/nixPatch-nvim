@@ -53,7 +53,7 @@ fn run(cwd: Dir, extra_init_config: []const u8, subs: []const Subs) !void {
     var in_dir = try cwd.openDir("patcher/test/luaparser-integration/input", .{ .iterate = true });
     defer in_dir.close();
 
-    try cwd.makeDir("patcher/test//luaparser-integration/out");
+    try cwd.makeDir("patcher/test/luaparser-integration/out");
     var out_dir = try cwd.openDir("patcher/test/luaparser-integration/out", .{ .iterate = true });
     defer out_dir.close();
 
