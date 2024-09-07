@@ -117,7 +117,7 @@ let
         head -1 ${placeholder "out"}/bin/${name} > $BASHCACHE
         # Add code
         cat ${preWrapperShellFile} >> $BASHCACHE
-        tail +2 ${placeholder "out"}/bin/${name} >> $BASHCACHE
+        tail -n +2 ${placeholder "out"}/bin/${name} >> $BASHCACHE
         cat $BASHCACHE > ${placeholder "out"}/bin/${name}
         rm $BASHCACHE
       ''
