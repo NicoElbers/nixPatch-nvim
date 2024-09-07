@@ -17,9 +17,40 @@ const Substitution = util.Substitution;
 const Allocator = std.mem.Allocator;
 const File = std.fs.File;
 
-pub const log_level: std.log.Level = .info;
+pub const std_options: std.Options = .{
+    .log_level = .info,
+    .logFn = logFn,
+};
+
+fn logFn(
+    comptime message_level: std.log.Level,
+    comptime scope: @TypeOf(.enum_literal),
+    comptime format: []const u8,
+    args: anytype,
+) void {
+    const stderr = std.io.getStdErr();
+    const writer = stderr.writer();
+    const config = std.io.tty.detectConfig(stderr);
+
+    switch (message_level) {
+        .warn => config.setColor(writer, .bright_yellow) catch {},
+        .err => {
+            config.setColor(writer, .bright_red) catch {};
+            config.setColor(writer, .bold) catch {};
+        },
+        else => {},
+    }
+
+    std.log.defaultLog(message_level, scope, format, args);
+
+    config.setColor(writer, .reset) catch {};
+}
 
 pub fn main() !void {
+    if (@import("builtin").os.tag == .windows) {
+        @compileError("nv does not support windows, please use a posix system");
+    }
+
     const start_time = try std.time.Instant.now();
     defer {
         const end_time = std.time.Instant.now() catch unreachable;
@@ -186,6 +217,24 @@ fn getSubs(alloc: Allocator, plugins: []const Plugin, extra_subs: []const u8) ![
     //         },
     //     }
     // }
+
+    for (subs.items, 0..) |sub_haystack, idx_haystack| {
+        for (subs.items, 0..) |sub_needle, idx_needle| {
+            if (idx_haystack == idx_needle) continue;
+
+            if (std.mem.eql(u8, sub_needle.from, sub_haystack.from) and
+                !std.mem.eql(u8, sub_needle.to, sub_haystack.to))
+            {
+                std.log.err(
+                    "Trying to substitute '{s}' to both '{s}' and '{s}'",
+                    .{ sub_needle.from, sub_needle.to, sub_haystack.to },
+                );
+                std.log.err("This may be because you have a substitution that collides with a plugin", .{});
+                std.log.err("or 2 substitutions that collide with eachother. exiting...", .{});
+                std.process.exit(1);
+            }
+        }
+    }
 
     return try subs.toOwnedSlice();
 }

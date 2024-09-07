@@ -27,17 +27,23 @@ pub fn parseInput(alloc: Allocator, input_blob: []const u8, input_files: []const
         std.log.warn("Did not find a url for {s}", .{plugin.pname});
     }
 
-    // Assert that all pnames and urls are unique
+    // Error if any plugin names are not unique
     for (0..user_plugins.len) |needle_idx| {
         const needle_plugin = user_plugins[needle_idx];
         for (0..user_plugins.len) |haystack_idx| {
             if (needle_idx == haystack_idx) continue;
             const haystack_plugin = user_plugins[haystack_idx];
 
-            assert(!std.mem.eql(u8, needle_plugin.pname, haystack_plugin.pname));
+            if (std.mem.eql(u8, needle_plugin.pname, haystack_plugin.pname)) {
+                @setCold(true);
 
-            if (needle_plugin.tag == .UrlNotFound or haystack_plugin.tag == .UrlNotFound) continue;
-            assert(!std.mem.eql(u8, needle_plugin.url, haystack_plugin.url));
+                std.log.err(
+                    "Found plugin '{s}' twice, cannot patch unambigiously. exiting",
+                    .{needle_plugin.pname},
+                );
+                std.log.err("You may have the same plugin twice in your flake, this is disallowed", .{});
+                std.process.exit(1);
+            }
         }
     }
 
@@ -91,7 +97,7 @@ fn findPluginUrl(alloc: Allocator, buf: []const u8, plugins: []Plugin) !void {
     };
 
     var state: State = .findPname;
-    defer assert(state == .findPname);
+    defer parseAssert(state == .findPname, "Parsing ended in an invalid state");
 
     var relevant_urls_found: u32 = 0;
 
@@ -121,7 +127,7 @@ fn findPluginUrl(alloc: Allocator, buf: []const u8, plugins: []Plugin) !void {
                 var split = splitOnEq(line);
                 const first = trim(split.first());
 
-                assert(!eql("pname", first));
+                parseAssert(!eql("pname", first), "Skipped to next plugin");
                 if (!eql("version", first))
                     continue :outer;
 
@@ -133,7 +139,7 @@ fn findPluginUrl(alloc: Allocator, buf: []const u8, plugins: []Plugin) !void {
 
                 const nvimEql = std.mem.endsWith(u8, plugin.version, nvimVersion);
                 const vimEql = eql(version, plugin.version);
-                assert(vimEql or nvimEql);
+                parseAssert(vimEql or nvimEql, "Version was not a known vim or nvim plugin version");
 
                 state = .{ .getUrl = plugin };
             },
@@ -142,11 +148,11 @@ fn findPluginUrl(alloc: Allocator, buf: []const u8, plugins: []Plugin) !void {
                 var split = splitOnEq(line);
                 const first = trim(split.first());
 
-                assert(!eql("pname", first));
+                parseAssert(!eql("pname", first), "Skipped to next plugin");
                 if (!eql("src", first))
                     continue :outer;
 
-                assert(plugin.tag == .UrlNotFound);
+                parseAssert(plugin.tag == .UrlNotFound, "Url already found");
 
                 const fetch_method = trim(split.next().?);
 
@@ -154,11 +160,11 @@ fn findPluginUrl(alloc: Allocator, buf: []const u8, plugins: []Plugin) !void {
                     plugin.tag = .GithubUrl;
 
                     var ownerLine = splitOnEq(line_spliterator.next().?);
-                    assert(eql("owner", ownerLine.first()));
+                    parseAssert(eql("owner", ownerLine.first()), "Github repo owner not found");
                     const owner = trim(ownerLine.next().?);
 
                     var repoLine = splitOnEq(line_spliterator.next().?);
-                    assert(eql("repo", repoLine.first()));
+                    parseAssert(eql("repo", repoLine.first()), "Github repo name not found");
                     const repo = trim(repoLine.next().?);
 
                     plugin.url = try std.fmt.allocPrint(
@@ -170,13 +176,13 @@ fn findPluginUrl(alloc: Allocator, buf: []const u8, plugins: []Plugin) !void {
                     plugin.tag = .GitUrl;
 
                     var urlLine = splitOnEq(line_spliterator.next().?);
-                    assert(eql("url", utils.trim(urlLine.first())));
+                    parseAssert(eql("url", utils.trim(urlLine.first())), "fetchgit URL not found");
                     const url = trim(urlLine.next().?);
 
                     plugin.url = try alloc.dupe(u8, trim(url));
                 } else if (eql("fetchzip", fetch_method)) {
                     var urlLine = splitOnEq(line_spliterator.next().?);
-                    assert(eql("url", utils.trim(urlLine.first())));
+                    parseAssert(eql("url", utils.trim(urlLine.first())), "fetchzip URL not found");
                     const url_with_zip = trim(urlLine.next().?);
 
                     if (mem.startsWith(u8, url_with_zip, "https://github.com/")) {
@@ -207,11 +213,7 @@ fn findPluginUrl(alloc: Allocator, buf: []const u8, plugins: []Plugin) !void {
                 var split = splitOnEq(line);
                 const first = trim(split.first());
 
-                if (eql("pname", first)) {
-                    std.debug.print("Overflow: '{s}'\n", .{plugin.pname});
-                }
-
-                assert(!eql("pname", first));
+                parseAssert(!eql("pname", first), "Skipped to next plugin");
                 if (!eql("meta.homepage", first) and !eql("meta", first))
                     continue :outer;
 
@@ -222,13 +224,13 @@ fn findPluginUrl(alloc: Allocator, buf: []const u8, plugins: []Plugin) !void {
                         // TODO: This assumes that "homepage" will always be the
                         // next line, make it more robust
                         var homepage_split = splitOnEq(line_spliterator.next().?);
-                        assert(eql("homepage", homepage_split.first()));
+                        parseAssert(eql("homepage", homepage_split.first()), "Found neither meta.homepage or homepage");
 
                         break :blk trim(homepage_split.next().?);
                     }
                 };
 
-                assert(eql(url, plugin.url));
+                parseAssert(eql(url, plugin.url), "git URL and homepage URL are not the same");
 
                 relevant_urls_found += 1;
                 state = .findPname;
@@ -239,7 +241,12 @@ fn findPluginUrl(alloc: Allocator, buf: []const u8, plugins: []Plugin) !void {
     std.log.debug("Found {d} relevant urls", .{relevant_urls_found});
 }
 
-// ---- Tests ----
+fn parseAssert(ok: bool, assumption: []const u8) void {
+    if (ok) return;
+
+    std.log.err("Parsing failed: {s}", .{assumption});
+    std.log.err("Please file a github issue :)", .{});
+}
 
 fn eqlPlugin(a: Plugin, b: Plugin) !void {
     try std.testing.expectEqualSlices(u8, a.pname, b.pname);
@@ -251,6 +258,8 @@ fn eqlPlugin(a: Plugin, b: Plugin) !void {
 
     try std.testing.expectEqualSlices(u8, a.url, b.url);
 }
+
+// ---- Tests ----
 
 test parseBlob {
     const alloc = std.testing.allocator;
