@@ -600,9 +600,9 @@ test "contex-aware-wrapping wrapped dependency" {
     ;
 
     const expected =
-        \\dir = [[plugin/path]], name = [[pname]],
+        \\dir = [[plugin/name]], name = [[pname]],
         \\dependencies = {
-        \\    { dir = [[plugin/path]], name = [[pname]] },
+        \\    { dir = [[plugin/name]], name = [[pname]] },
         \\}
     ;
 
@@ -633,9 +633,9 @@ test "contex-aware-wrapping unwrapped single dependency" {
     ;
 
     const expected =
-        \\dir = [[plugin/path]], name = [[pname]],
+        \\dir = [[plugin/name]], name = [[pname]],
         \\dependencies = {
-        \\    dir = [[plugin/path]], name = [[pname]],
+        \\    dir = [[plugin/name]], name = [[pname]],
         \\}
     ;
 
@@ -667,10 +667,10 @@ test "contex-aware-wrapping unwrapped multiple dependencies" {
     ;
 
     const expected =
-        \\dir = [[plugin/path]], name = [[pname]],
+        \\dir = [[plugin/name]], name = [[pname]],
         \\dependencies = {
-        \\    { dir = [[plugin/path]], name = [[pname]] },
-        \\    { dir = [[plugin/path]], name = [[pname]] },
+        \\    { dir = [[plugin/name]], name = [[pname]] },
+        \\    { dir = [[plugin/name]], name = [[pname]] },
         \\}
     ;
 
@@ -705,13 +705,13 @@ test "contex-aware-wrapping mixed multiple dependencies" {
     ;
 
     const expected =
-        \\dir = [[plugin/path]], name = [[pname]],
+        \\dir = [[plugin/name]], name = [[pname]],
         \\dependencies = {
-        \\    { dir = [[plugin/path]], name = [[pname]] },
-        \\    { dir = [[plugin/path]], name = [[pname]] },
-        \\    { dir = [[plugin/path]], name = [[pname]] },
-        \\    { dir = [[plugin/path]], name = [[pname]] },
-        \\    { dir = [[plugin/path]], name = [[pname]] },
+        \\    { dir = [[plugin/name]], name = [[pname]] },
+        \\    { dir = [[plugin/name]], name = [[pname]] },
+        \\    { dir = [[plugin/name]], name = [[pname]] },
+        \\    { dir = [[plugin/name]], name = [[pname]] },
+        \\    { dir = [[plugin/name]], name = [[pname]] },
         \\}
     ;
 
@@ -746,11 +746,11 @@ test "contex-aware-wrapping single unwrapped single extensive multiple dependenc
     ;
 
     const expected =
-        \\dir = [[plugin/path]], name = [[pname]],
+        \\dir = [[plugin/name]], name = [[pname]],
         \\dependencies = {
-        \\    { dir = [[plugin/path]], name = [[pname]] },
+        \\    { dir = [[plugin/name]], name = [[pname]] },
         \\    { 
-        \\        dir = [[plugin/path]], name = [[pname]],
+        \\        dir = [[plugin/name]], name = [[pname]],
         \\        opts = {},
         \\    },
         \\}
@@ -791,15 +791,15 @@ test "contex-aware-wrapping nested dependencies" {
     ;
 
     const expected =
-        \\dir = [[plugin/path]], name = [[pname]],
+        \\dir = [[plugin/name]], name = [[pname]],
         \\dependencies = {
-        \\    { dir = [[plugin/path]], name = [[pname]] },
+        \\    { dir = [[plugin/name]], name = [[pname]] },
         \\    { 
-        \\        dir = [[plugin/path]], name = [[pname]],
+        \\        dir = [[plugin/name]], name = [[pname]],
         \\        opts = {},
         \\        dependencies = {
-        \\            { dir = [[plugin/path]], name = [[pname]] },
-        \\            { dir = [[plugin/path]], name = [[pname]] },
+        \\            { dir = [[plugin/name]], name = [[pname]] },
+        \\            { dir = [[plugin/name]], name = [[pname]] },
         \\        }
         \\    },
         \\}
