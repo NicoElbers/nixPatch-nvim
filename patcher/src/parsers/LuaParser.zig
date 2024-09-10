@@ -1,25 +1,11 @@
-const std = @import("std");
-const fs = std.fs;
-const assert = std.debug.assert;
-const utils = @import("utils.zig");
-
-const Allocator = std.mem.Allocator;
-const File = fs.File;
-const Dir = fs.Dir;
-const Plugin = utils.Plugin;
-const Substitution = utils.Substitution;
-const LuaIter = @import("LuaIter.zig");
-
-const Self = @This();
-
 alloc: Allocator,
 in_dir: Dir,
 out_dir: Dir,
 extra_init_config: []const u8,
 
 // TODO: Change paths to dirs
-pub fn init(alloc: Allocator, in_dir: Dir, out_dir: Dir, extra_init_config: []const u8) !Self {
-    return Self{
+pub fn init(alloc: Allocator, in_dir: Dir, out_dir: Dir, extra_init_config: []const u8) !LuaParser {
+    return LuaParser{
         .alloc = alloc,
         .in_dir = in_dir,
         .out_dir = out_dir,
@@ -27,7 +13,7 @@ pub fn init(alloc: Allocator, in_dir: Dir, out_dir: Dir, extra_init_config: []co
     };
 }
 
-pub fn deinit(self: *Self) void {
+pub fn deinit(self: *LuaParser) void {
     self.in_dir.close();
     self.out_dir.close();
 }
@@ -38,7 +24,7 @@ pub fn deinit(self: *Self) void {
 /// iterates over the input directory recursively. It copies non lua files
 /// directly and parses lua files for substitutions before copying the parsed
 /// files over.
-pub fn createConfig(self: Self, subs: []const Substitution) !void {
+pub fn createConfig(self: LuaParser, subs: []const Substitution) !void {
     // FIXME: Create a loop that asserts subs.from are all unique
     //  - What if we have a custom sub that overrides a patched sub?
     var walker = try self.in_dir.walk(self.alloc);
@@ -831,3 +817,17 @@ test "contex-aware-wrapping nested dependencies" {
 
     try std.testing.expectEqualStrings(expected, out_buf);
 }
+
+const std = @import("std");
+const fs = std.fs;
+const assert = std.debug.assert;
+const utils = @import("utils.zig");
+
+const Allocator = std.mem.Allocator;
+const File = fs.File;
+const Dir = fs.Dir;
+const Plugin = utils.Plugin;
+const Substitution = utils.Substitution;
+const LuaIter = @import("LuaIter.zig");
+
+const LuaParser = @This();

@@ -1,12 +1,3 @@
-const std = @import("std");
-const fs = std.fs;
-const assert = std.debug.assert;
-const utils = @import("utils.zig");
-
-const Allocator = std.mem.Allocator;
-const File = std.fs.File;
-const Plugin = utils.Plugin;
-
 pub fn parseInput(alloc: Allocator, input_blob: []const u8, input_files: []const File) ![]const Plugin {
     const user_plugins = try parseBlob(alloc, input_blob);
 
@@ -447,3 +438,12 @@ fn splitOnEq(input: []const u8) mem.SplitIterator(u8, .sequence) {
 fn eql(expected: []const u8, input: []const u8) bool {
     return mem.eql(u8, expected, trim(input));
 }
+
+const std = @import("std");
+const fs = std.fs;
+const assert = std.debug.assert;
+const utils = @import("utils.zig");
+
+const Allocator = std.mem.Allocator;
+const File = std.fs.File;
+const Plugin = utils.Plugin;

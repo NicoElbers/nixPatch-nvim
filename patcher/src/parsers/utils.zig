@@ -1,11 +1,3 @@
-const std = @import("std");
-const fs = std.fs;
-const mem = std.mem;
-const assert = std.debug.assert;
-
-const File = fs.File;
-const Allocator = mem.Allocator;
-
 pub const Plugin = struct {
     pname: []const u8,
     version: []const u8,
@@ -147,3 +139,11 @@ pub fn split(input: []const u8) mem.SplitIterator(u8, .sequence) {
 pub fn eql(expected: []const u8, input: []const u8) bool {
     return mem.eql(u8, expected, trim(input));
 }
+
+const std = @import("std");
+const fs = std.fs;
+const mem = std.mem;
+const assert = std.debug.assert;
+
+const File = fs.File;
+const Allocator = mem.Allocator;
