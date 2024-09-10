@@ -19,9 +19,9 @@ pub fn build(b: *Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    // Parser module
-    const parsers_mod = NamedModule.init(b, "parsers", .{
-        .root_source_file = b.path("patcher/src/parsers/root.zig"),
+    // Lib module
+    const lib_mod = NamedModule.init(b, "lib", .{
+        .root_source_file = b.path("patcher/src/lib/root.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -30,7 +30,7 @@ pub fn build(b: *Build) void {
     const check = b.step("check", "Check if project compiles");
 
     // Create exe
-    const exe = addExe(b, check, &.{parsers_mod}, .{
+    const exe = addExe(b, check, &.{lib_mod}, .{
         .name = "config-patcher",
         .root_source_file = b.path("patcher/src/main.zig"),
         .target = target,
@@ -49,13 +49,13 @@ pub fn build(b: *Build) void {
     // Tests
     const test_step = b.step("test", "Run unit tests");
 
-    _ = addTest(b, check, &.{parsers_mod}, test_step, .{
-        .root_source_file = b.path("patcher/src/parsers/root.zig"),
+    _ = addTest(b, check, &.{lib_mod}, test_step, .{
+        .root_source_file = b.path("patcher/src/lib/root.zig"),
         .target = target,
         .optimize = optimize,
     });
 
-    _ = addTest(b, check, &.{parsers_mod}, test_step, .{
+    _ = addTest(b, check, &.{lib_mod}, test_step, .{
         .root_source_file = b.path("patcher/test/root.zig"),
         .target = target,
         .optimize = optimize,

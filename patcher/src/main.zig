@@ -1,19 +1,17 @@
 // FIXME: Think about the case where a user adds their own plugin to nixpkgs
 // TODO: Create an end to end test on a sample config
 const std = @import("std");
+const lib = @import("lib");
 const fs = std.fs;
-const parsers = @import("parsers");
+const input_parser = lib.input_parser;
 
 const assert = std.debug.assert;
-const util = parsers.utils;
+const util = lib.utils;
 
-const InputParser = parsers.input_parser;
-const LuaParser = parsers.LuaParser;
-const LuaIter = parsers.LuaIter;
-
-const Plugin = util.Plugin;
-const Substitution = util.Substitution;
-
+const LuaParser = lib.LuaParser;
+const LuaIter = lib.LuaIter;
+const Plugin = lib.Plugin;
+const Substitution = lib.Substitution;
 const Allocator = std.mem.Allocator;
 const File = std.fs.File;
 
@@ -173,7 +171,7 @@ fn getPlugins(alloc: Allocator, nixpkgs_path: []const u8, input_blob: []const u8
 
     const files: []const File = &.{ vim_plugins_file, lua_plugins_file };
 
-    return try InputParser.parseInput(alloc, input_blob, files);
+    return try input_parser.parseInput(alloc, input_blob, files);
 }
 
 fn getSubs(alloc: Allocator, plugins: []const Plugin, extra_subs: []const u8) ![]const Substitution {
