@@ -189,33 +189,6 @@ fn getSubs(alloc: Allocator, plugins: []const Plugin, extra_subs: []const u8) ![
     try subsFromPlugins(alloc, plugins, &subs);
     try subsFromBlob(alloc, extra_subs, &subs);
 
-    // pretty print all subs for debugging
-    // for (subs) |sub| {
-    //     std.debug.print("\n", .{});
-    //     switch (sub.tag) {
-    //         .url => |pname| {
-    //             std.debug.print(
-    //                 \\try Substitution.initUrlSub(
-    //                 \\    alloc,
-    //                 \\    "{s}",
-    //                 \\    "{s}",
-    //                 \\    "{s}",
-    //                 \\),
-    //             , .{ sub.from, sub.to, pname });
-    //         },
-    //         .string => |key| {
-    //             std.debug.print(
-    //                 \\try Substitution.initStringSub(
-    //                 \\    alloc,
-    //                 \\    "{s}",
-    //                 \\    "{s}",
-    //                 \\    key,
-    //                 \\),
-    //             , .{ sub.from, sub.to });
-    //         },
-    //     }
-    // }
-
     for (subs.items, 0..) |sub_haystack, idx_haystack| {
         for (subs.items, 0..) |sub_needle, idx_needle| {
             if (idx_haystack == idx_needle) continue;

@@ -40,7 +40,7 @@ pub const Substitution = struct {
     to: []const u8,
     tag: Tag,
 
-    const Tag = union(enum) {
+    pub const Tag = union(enum) {
         /// Extra data is the pname
         url: []const u8,
         /// Extra data is the key
@@ -94,6 +94,35 @@ pub const Substitution = struct {
         }
         alloc.free(slice);
     }
+
+    pub fn format(sub: Substitution, comptime fmt: []const u8, options: FormatOptions, writer: anytype) !void {
+        _ = options;
+        _ = fmt;
+
+        switch (sub.tag) {
+            .url => |pname| {
+                try writer.writeAll("Substitution(url){'");
+                try writer.writeAll(sub.from);
+                try writer.writeAll("' -> '");
+                try writer.writeAll(sub.to);
+                try writer.writeAll("', pname: ");
+                try writer.writeAll(pname);
+                try writer.writeAll("}");
+            },
+            .string => |key| {
+                try writer.writeAll("Substitution(string){'");
+                try writer.writeAll(sub.from);
+                try writer.writeAll("' -> '");
+                try writer.writeAll(sub.to);
+                try writer.writeAll("', key: ");
+                try writer.writeAll(key orelse "null");
+                try writer.writeAll("}");
+            },
+        }
+    }
 };
 
-const Allocator = @import("std").mem.Allocator;
+const std = @import("std");
+
+const Allocator = std.mem.Allocator;
+const FormatOptions = std.fmt.FormatOptions;
