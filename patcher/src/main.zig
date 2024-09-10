@@ -1,20 +1,3 @@
-// FIXME: Think about the case where a user adds their own plugin to nixpkgs
-// TODO: Create an end to end test on a sample config
-const std = @import("std");
-const lib = @import("lib");
-const fs = std.fs;
-const input_parser = lib.input_parser;
-
-const assert = std.debug.assert;
-const util = lib.utils;
-
-const LuaParser = lib.LuaParser;
-const LuaIter = lib.LuaIter;
-const Plugin = lib.Plugin;
-const Substitution = lib.Substitution;
-const Allocator = std.mem.Allocator;
-const File = std.fs.File;
-
 pub const std_options: std.Options = .{
     .log_level = .info,
     .logFn = logFn,
@@ -277,3 +260,18 @@ fn subsFromPlugins(alloc: Allocator, plugins: []const Plugin, out: *std.ArrayLis
         }
     }
 }
+
+const std = @import("std");
+const lib = @import("lib");
+const fs = std.fs;
+const nixpkgs_parser = lib.nixpkgs_parser;
+
+const assert = std.debug.assert;
+const util = lib.utils;
+
+const LuaParser = lib.LuaParser;
+const LuaIter = lib.LuaIter;
+const Plugin = lib.Plugin;
+const Substitution = lib.Substitution;
+const Allocator = std.mem.Allocator;
+const File = std.fs.File;
