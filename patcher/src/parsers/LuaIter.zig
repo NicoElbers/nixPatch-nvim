@@ -1,9 +1,3 @@
-const std = @import("std");
-const mem = std.mem;
-const assert = std.debug.assert;
-
-const Self = @This();
-
 buf: []const u8,
 ptr: usize = 0,
 lua_string_cache: ?LuaStringCache = null,
@@ -45,8 +39,8 @@ const LuaStringCache = struct {
 };
 
 /// A call to next will show the first character
-pub fn init(buf: []const u8) Self {
-    return Self{
+pub fn init(buf: []const u8) LuaIter {
+    return LuaIter{
         .buf = buf,
         .ptr = 0,
         .lua_string_cache = null,
@@ -54,49 +48,49 @@ pub fn init(buf: []const u8) Self {
 }
 
 /// A call to back will show the last character
-pub fn initBack(buf: []const u8) Self {
-    return Self{
+pub fn initBack(buf: []const u8) LuaIter {
+    return LuaIter{
         .buf = buf,
         .ptr = buf.len,
         .lua_string_cache = null,
     };
 }
 
-pub fn isDone(self: Self) bool {
+pub fn isDone(self: LuaIter) bool {
     return self.ptr < 0 or self.ptr >= self.buf.len;
 }
 
-pub fn isDoneReverse(self: Self) bool {
+pub fn isDoneReverse(self: LuaIter) bool {
     return self.ptr <= 0 or self.ptr > self.buf.len;
 }
 
-pub fn peek(self: Self) ?u8 {
+pub fn peek(self: LuaIter) ?u8 {
     if (self.isDone()) return null;
     return self.buf[self.ptr];
 }
 
-pub fn next(self: *Self) ?u8 {
+pub fn next(self: *LuaIter) ?u8 {
     defer self.ptr += 1;
     return self.peek();
 }
 
-pub fn peekBack(self: Self) ?u8 {
+pub fn peekBack(self: LuaIter) ?u8 {
     return self.peekBackBy(1);
 }
 
-pub fn peekBackBy(self: Self, by: usize) ?u8 {
+pub fn peekBackBy(self: LuaIter, by: usize) ?u8 {
     if (self.ptr < by) return null;
     return self.buf[self.ptr - by];
 }
 
-pub fn back(self: *Self) ?u8 {
+pub fn back(self: *LuaIter) ?u8 {
     defer if (!self.isDoneReverse()) {
         self.ptr -= 1;
     };
     return self.peekBack();
 }
 
-pub fn peekNextLuaString(self: *Self) ?[]const u8 {
+pub fn peekNextLuaString(self: *LuaIter) ?[]const u8 {
     const start = self.findLuaStringOpeningAfter() orelse return null;
     const stop = self.findLuaStringClosingOn() orelse return null;
     return self.buf[start..stop];
@@ -106,15 +100,15 @@ pub fn peekNextLuaString(self: *Self) ?[]const u8 {
 ///    "String"
 ///    ^
 ///   Until this is returned
-pub fn peekNextUntilLuaString(self: *Self) ?[]const u8 {
+pub fn peekNextUntilLuaString(self: *LuaIter) ?[]const u8 {
     if (self.isDone()) return null;
     const string_start = self.findLuaStringOpeningOn() orelse return null;
     return self.buf[self.ptr..string_start];
 }
 
-pub fn peekNextStringTableHasKey(self: *Self, key: []const u8) bool {
+pub fn peekNextStringTableHasKey(self: *LuaIter, key: []const u8) bool {
     const string_idx = self.findLuaStringOpeningOn() orelse return false;
-    var backIter = Self.initBack(self.buf[0..string_idx]);
+    var backIter = LuaIter.initBack(self.buf[0..string_idx]);
 
     // Find the relevant start of table
     var brace_counter: u32 = 0;
@@ -168,7 +162,7 @@ pub fn peekNextStringTableHasKey(self: *Self, key: []const u8) bool {
 ///   {string} is the lua string,
 ///
 /// It returns a slice from self.ptr to the first character of the key
-pub fn peekUntilNextLuaStringKey(self: *Self, key: []const u8) ?[]const u8 {
+pub fn peekUntilNextLuaStringKey(self: *LuaIter, key: []const u8) ?[]const u8 {
     const before_string = self.peekNextUntilLuaString() orelse return null;
 
     if (before_string.len <= key.len) return null;
@@ -201,13 +195,13 @@ pub fn peekUntilNextLuaStringKey(self: *Self, key: []const u8) ?[]const u8 {
         return null;
     }
 }
-pub fn nextUntilBefore(self: *Self, until: []const u8) ?[]const u8 {
+pub fn nextUntilBefore(self: *LuaIter, until: []const u8) ?[]const u8 {
     const str = self.peekUntilBefore(until) orelse return null;
     self.ptr += str.len;
     return str;
 }
 
-pub fn peekUntilBefore(self: Self, until: []const u8) ?[]const u8 {
+pub fn peekUntilBefore(self: LuaIter, until: []const u8) ?[]const u8 {
     if ((self.ptr + until.len) >= self.buf.len) return null;
 
     for ((self.ptr)..(self.buf.len - until.len + 1)) |ptr| {
@@ -219,13 +213,13 @@ pub fn peekUntilBefore(self: Self, until: []const u8) ?[]const u8 {
     return null;
 }
 
-pub fn nextUntilAfter(self: *Self, until: []const u8) ?[]const u8 {
+pub fn nextUntilAfter(self: *LuaIter, until: []const u8) ?[]const u8 {
     const str = self.peekUntilAfter(until) orelse return null;
     self.ptr += str.len;
     return str;
 }
 
-pub fn peekUntilAfter(self: Self, until: []const u8) ?[]const u8 {
+pub fn peekUntilAfter(self: LuaIter, until: []const u8) ?[]const u8 {
     if ((self.ptr + until.len) >= self.buf.len) return null;
 
     for ((self.ptr)..(self.buf.len - until.len + 1)) |ptr| {
@@ -237,19 +231,19 @@ pub fn peekUntilAfter(self: Self, until: []const u8) ?[]const u8 {
     return null;
 }
 
-pub fn nextUntilAfterLuaString(self: *Self) ?[]const u8 {
+pub fn nextUntilAfterLuaString(self: *LuaIter) ?[]const u8 {
     const end_ptr = self.findLuaStringClosingAfter() orelse return null;
     defer self.ptr = end_ptr;
     return self.buf[self.ptr..end_ptr];
 }
 
-pub fn rest(self: *Self) ?[]const u8 {
+pub fn rest(self: *LuaIter) ?[]const u8 {
     if (self.isDone()) return null;
     defer self.ptr = self.buf.len;
     return self.buf[self.ptr..];
 }
 
-pub fn peekRest(self: *Self) ?[]const u8 {
+pub fn peekRest(self: *LuaIter) ?[]const u8 {
     if (self.isDone()) return null;
     return self.buf[self.ptr..];
 }
@@ -270,7 +264,7 @@ fn isAnyWhitespace(char: u8) bool {
     return false;
 }
 
-fn findLuaStringOpeningOn(self: *Self) ?usize {
+fn findLuaStringOpeningOn(self: *LuaIter) ?usize {
     if (self.isDone()) {
         return null;
     }
@@ -313,7 +307,7 @@ fn findLuaStringOpeningOn(self: *Self) ?usize {
         return self.ptr + iter.ptr - 1;
     }
 }
-fn findLuaStringOpeningAfter(self: *Self) ?usize {
+fn findLuaStringOpeningAfter(self: *LuaIter) ?usize {
     const ptr = self.findLuaStringOpeningOn() orelse return null;
     if (self.buf[ptr] == '[') {
         return ptr + 2;
@@ -322,7 +316,7 @@ fn findLuaStringOpeningAfter(self: *Self) ?usize {
     }
 }
 
-fn findLuaStringClosingOn(self: *Self) ?usize {
+fn findLuaStringClosingOn(self: *LuaIter) ?usize {
     if (self.isDone()) {
         return null;
     }
@@ -361,7 +355,7 @@ fn findLuaStringClosingOn(self: *Self) ?usize {
     }
 }
 
-fn findLuaStringClosingAfter(self: *Self) ?usize {
+fn findLuaStringClosingAfter(self: *LuaIter) ?usize {
     const ptr = self.findLuaStringClosingOn() orelse return null;
     if (self.buf[ptr] == ']') {
         return ptr + 2;
@@ -640,3 +634,9 @@ test "not escaped double quote in string" {
     const expected = " \\\\";
     try expectEqualStrings(expected, iter.peekNextLuaString() orelse return error.failed);
 }
+
+const std = @import("std");
+const mem = std.mem;
+const assert = std.debug.assert;
+
+const LuaIter = @This();

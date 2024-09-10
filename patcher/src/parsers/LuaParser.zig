@@ -8,7 +8,7 @@ const File = fs.File;
 const Dir = fs.Dir;
 const Plugin = utils.Plugin;
 const Substitution = utils.Substitution;
-const BufIter = @import("BufIter.zig");
+const LuaIter = @import("LuaIter.zig");
 
 const Self = @This();
 
@@ -88,7 +88,7 @@ pub fn createConfig(self: Self, subs: []const Substitution) !void {
 
 /// Memory owned by out
 fn subsFromBlob(alloc: Allocator, subs_blob: []const u8, out: *std.ArrayList(Substitution)) !void {
-    var iter = BufIter.init(subs_blob);
+    var iter = LuaIter.init(subs_blob);
 
     if (subs_blob.len < 3) {
         return;
@@ -156,7 +156,7 @@ fn subsFromPlugins(alloc: Allocator, plugins: []const Plugin, out: *std.ArrayLis
 
 /// Returns a _new_ buffer, owned by the caller
 fn parseLuaFile(alloc: Allocator, input_buf: []const u8, subs: []const Substitution) ![]const u8 {
-    var iter = BufIter.init(input_buf);
+    var iter = LuaIter.init(input_buf);
 
     // Tack on 10% file size, should remove any resizes unless you do something
     // stupid

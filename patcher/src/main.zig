@@ -9,7 +9,7 @@ const util = parsers.utils;
 
 const InputParser = parsers.input_parser;
 const LuaParser = parsers.LuaParser;
-const BufIter = parsers.BufIter;
+const LuaIter = parsers.LuaIter;
 
 const Plugin = util.Plugin;
 const Substitution = util.Substitution;
@@ -241,7 +241,7 @@ fn getSubs(alloc: Allocator, plugins: []const Plugin, extra_subs: []const u8) ![
 
 /// Memory owned by caller
 fn subsFromBlob(alloc: Allocator, subs_blob: []const u8, out: *std.ArrayList(Substitution)) !void {
-    var iter = BufIter.init(subs_blob);
+    var iter = LuaIter.init(subs_blob);
 
     // If the blob is less than 3 characters, the blob must not contain any subs
     // as at least 3 seperator characters are required
