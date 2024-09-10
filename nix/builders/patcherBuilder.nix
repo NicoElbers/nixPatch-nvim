@@ -18,14 +18,15 @@
 let
   nixpkgsOutPath = nixpkgs.outPath;
 
+  # Put all your plugins in the format nv expects
   inputBlob = [(builtins.concatStringsSep ";"
     (builtins.map (plugin: "${plugin.pname}|${plugin.version}|${plugin}") plugins))];
 
-  # TODO: is this needed?
   inputBlobEscaped = (if inputBlob == [""] 
     then "-"
     else lib.escapeShellArgs inputBlob);
 
+  # Put all your substitutions in the format nv expects
   subToBlobItem = s: 
     let
       type = if s ? type then s.type else "string";
@@ -36,11 +37,11 @@ let
   subBlob = [(builtins.concatStringsSep ";"
     (map subToBlobItem customSubs))];
 
-  # TODO: is this needed?
   subBlobEscaped = (if subBlob == [""] 
     then "-"
     else lib.escapeShellArgs subBlob);
 
+  # Link all the provider binaries in one directory
   providers = (callPackage ./providerBuilder.nix {}) {
     inherit name;
     inherit withNodeJs;
@@ -49,6 +50,7 @@ let
     inherit withPython3 python3Env extraPython3WrapperArgs;
   };
 
+  # Generate the lua code to tell neovim about our providers
   hostprog_check_table = {
     node = withNodeJs;
     python = false;
@@ -91,11 +93,14 @@ in
 stdenvNoCC.mkDerivation {
   name = "nvim-config-patched";
   version = "0";
+  # This should always be the source, because we need to rebuild when this changes.
+  # No fancy "optimizations" to not copy it to the store
   src = luaPath;
 
   dontConfigure = true;
   dontInstall = true;
 
+  # TODO: Set the variables as env variables
   buildPhase = /* bash */ ''
   ${lib.getExe patcher} \
     ${nixpkgsOutPath} \
