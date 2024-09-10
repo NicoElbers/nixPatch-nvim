@@ -819,15 +819,16 @@ test "contex-aware-wrapping nested dependencies" {
 }
 
 const std = @import("std");
+const root = @import("root.zig");
 const fs = std.fs;
+const utils = root.utils;
 const assert = std.debug.assert;
-const utils = @import("utils.zig");
 
 const Allocator = std.mem.Allocator;
 const File = fs.File;
 const Dir = fs.Dir;
-const Plugin = utils.Plugin;
-const Substitution = utils.Substitution;
-const LuaIter = @import("LuaIter.zig");
+const Plugin = root.Plugin;
+const Substitution = root.Substitution;
+const LuaIter = root.LuaIter;
 
 const LuaParser = @This();

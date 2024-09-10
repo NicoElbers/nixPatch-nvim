@@ -440,10 +440,11 @@ fn eql(expected: []const u8, input: []const u8) bool {
 }
 
 const std = @import("std");
+const root = @import("root.zig");
 const fs = std.fs;
+const utils = root.utils;
 const assert = std.debug.assert;
-const utils = @import("utils.zig");
 
 const Allocator = std.mem.Allocator;
 const File = std.fs.File;
-const Plugin = utils.Plugin;
+const Plugin = root.Plugin;

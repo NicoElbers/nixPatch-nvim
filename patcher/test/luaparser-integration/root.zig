@@ -1,16 +1,16 @@
 const std = @import("std");
+const lib = @import("lib");
 const testing = std.testing;
-const parsers = @import("parsers");
 const fs = std.fs;
-const utils = parsers.utils;
+const utils = lib.utils;
 
 const eqlString = testing.expectEqualStrings;
 const expect = testing.expect;
 
 const Dir = fs.Dir;
 const File = fs.File;
-const LuaParser = parsers.LuaParser;
-const Subs = utils.Substitution;
+const LuaParser = lib.LuaParser;
+const Subs = lib.Substitution;
 
 test {
     var cwd = try fs.cwd().openDir(".", .{ .iterate = true });
