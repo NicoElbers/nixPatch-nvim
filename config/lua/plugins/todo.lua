@@ -2,11 +2,7 @@ return {
     "folke/todo-comments.nvim",
     event = { "BufRead", "BufWrite", "BufNewFile" },
     cmd = { "TodoTrouble", "TodoTelescope" },
-    dependencies = {
-        {
-            "nvim-lua/plenary.nvim",
-        },
-    },
+    dependencies = { "nvim-lua/plenary.nvim" },
     config = true,
     -- stylua: ignore
     keys = {

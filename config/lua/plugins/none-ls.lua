@@ -3,9 +3,7 @@ local utils = require("utils")
 return {
     "nvimtools/none-ls.nvim",
     dependencies = {
-        {
-            "nvim-lua/plenary.nvim",
-        },
+        "nvim-lua/plenary.nvim",
     },
     ft = {
         -- checkstyle

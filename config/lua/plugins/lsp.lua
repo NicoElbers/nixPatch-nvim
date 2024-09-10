@@ -4,14 +4,8 @@ return {
     {
         "neovim/nvim-lspconfig",
         dependencies = {
-            {
-                "folke/neodev.nvim",
-                opts = {},
-            },
-            {
-                "j-hui/fidget.nvim",
-                opts = {},
-            },
+            "folke/neodev.nvim",
+            "j-hui/fidget.nvim",
         },
         ft = {
             "c",
