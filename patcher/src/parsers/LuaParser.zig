@@ -220,9 +220,16 @@ fn parseLuaFile(alloc: Allocator, input_buf: []const u8, subs: []const Substitut
                     _ = iter.nextUntilAfterLuaString() orelse unreachable;
                 },
                 .url => |pname| {
+                    const should_wrap = iter.peekNextStringTableHasKey("dependencies");
+
                     const before_string = iter.peekUntilNextLuaStringKey("url") orelse
                         iter.peekNextUntilLuaString() orelse unreachable;
                     try out_arr.appendSlice(before_string);
+
+                    if (should_wrap) {
+                        try out_arr.appendSlice("{ ");
+                    }
+
                     try out_arr.appendSlice("dir = "); // Tell lazy this is a dir
                     try out_arr.appendSlice("[["); // String opening
                     try out_arr.appendSlice(sub.to);
@@ -231,6 +238,10 @@ fn parseLuaFile(alloc: Allocator, input_buf: []const u8, subs: []const Substitut
                     try out_arr.appendSlice("[["); // String opening
                     try out_arr.appendSlice(pname);
                     try out_arr.appendSlice("]]"); // String closing
+
+                    if (should_wrap) {
+                        try out_arr.appendSlice(" }");
+                    }
 
                     _ = iter.nextUntilAfterLuaString() orelse unreachable;
                 },
