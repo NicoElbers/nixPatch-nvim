@@ -112,6 +112,53 @@ pub fn peekNextUntilLuaString(self: *Self) ?[]const u8 {
     return self.buf[self.ptr..string_start];
 }
 
+pub fn peekNextStringTableHasKey(self: *Self, key: []const u8) bool {
+    const string_idx = self.findLuaStringOpeningOn() orelse return false;
+    var backIter = Self.initBack(self.buf[0..string_idx]);
+
+    // Find the relevant start of table
+    var brace_counter: u32 = 0;
+    loop: while (backIter.back()) |char| switch (char) {
+        '}' => brace_counter += 1,
+        '{' => {
+            if (brace_counter == 0)
+                break :loop
+            else
+                brace_counter -= 1;
+        },
+        else => {},
+    } else return false;
+
+    // Find the equals
+    loop: while (backIter.back()) |char| {
+        // Ignore whitespace
+        if (isInlineWhitespace(char)) continue;
+
+        // If we do _not_ find an '=', this is invalid or irrelevant lua (I think)
+        if (char != '=')
+            return false;
+
+        break :loop;
+    } else return false;
+
+    // Ignore whitespace
+    while (isAnyWhitespace(backIter.back() orelse return false)) {}
+    // Make sure we include the last character of the key
+    _ = backIter.next();
+
+    // There isn't enough space to fit the key
+    if (backIter.ptr < key.len)
+        return false;
+
+    // If the key had more characters before it (say `xkey`),
+    // then make sure that we return false
+    const before_key = backIter.peekBackBy(key.len + 1);
+    if (before_key != null and !isAnyWhitespace(before_key.?)) return false;
+
+    const maybe_key = backIter.buf[(backIter.ptr - key.len)..backIter.ptr];
+    return std.mem.eql(u8, key, maybe_key);
+}
+
 /// This function is equal to the following:
 /// `{key}\s*=\s*{string}`
 /// where:
@@ -128,7 +175,7 @@ pub fn peekUntilNextLuaStringKey(self: *Self, key: []const u8) ?[]const u8 {
 
     var iter = initBack(before_string);
     while (iter.back()) |char| {
-        if (isWhitespace(char)) continue;
+        if (isInlineWhitespace(char)) continue;
         if (char == '=') break;
 
         // Non white space character is not '='
@@ -138,7 +185,7 @@ pub fn peekUntilNextLuaStringKey(self: *Self, key: []const u8) ?[]const u8 {
     const last_key_char = key[key.len - 1];
 
     while (iter.back()) |char| {
-        if (isWhitespace(char)) continue;
+        if (isInlineWhitespace(char)) continue;
         if (char != last_key_char) return null;
 
         // Make sure to include the end char
@@ -207,8 +254,20 @@ pub fn peekRest(self: *Self) ?[]const u8 {
     return self.buf[self.ptr..];
 }
 
-fn isWhitespace(char: u8) bool {
-    return char == ' ' or char == '\t';
+pub const whitespace_inline = [_]u8{ ' ', '\t' };
+fn isInlineWhitespace(char: u8) bool {
+    inline for (whitespace_inline) |w| {
+        if (char == w) return true;
+    }
+    return false;
+}
+
+pub const whitespace_any = whitespace_inline ++ [_]u8{'\n'};
+fn isAnyWhitespace(char: u8) bool {
+    inline for (whitespace_any) |w| {
+        if (char == w) return true;
+    }
+    return false;
 }
 
 fn findLuaStringOpeningOn(self: *Self) ?usize {

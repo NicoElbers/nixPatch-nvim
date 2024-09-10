@@ -635,7 +635,7 @@ test "contex-aware-wrapping unwrapped single dependency" {
     const expected =
         \\dir = [[plugin/name]], name = [[pname]],
         \\dependencies = {
-        \\    dir = [[plugin/name]], name = [[pname]],
+        \\    { dir = [[plugin/name]], name = [[pname]] },
         \\}
     ;
 
