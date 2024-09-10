@@ -7,7 +7,6 @@
   - [Quick setup](#quick-setup)
   - [Installation, the long version](#installation-the-long-version)
     - [Setting up your config](#setting-up-your-config)
-      - [Setting up dependencies](#setting-up-dependencies)
       - [Utilities](#utilities)
       - [Loading lazy.nvim](#loading-lazynvim)
       - [Dealing with mason and the like](#dealing-with-mason-and-the-like)
@@ -15,10 +14,7 @@
   - [Goals](#goals)
   - [Limitations](#limitations)
   - [Roadmap](#roadmap)
-  - [How it works](#how-it-works)
-    - [Patching your config](#patching-your-config)
-    - [Zig](#zig)
-  - [Blocks for release](#blocks-for-release)
+  - [How it works](#how-it-works) - [Patching your config](#patching-your-config) - [Zig](#zig)
   <!--toc:end-->
 
 `nv` is a wrapper around Neovim that makes your Lua configuration nix compatible. It makes the barrier to a working Neovim configuration on nix as small as possible for existing Neovim users.
