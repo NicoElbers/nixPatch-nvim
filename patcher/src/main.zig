@@ -13,6 +13,7 @@ fn logFn(
     const writer = stderr.writer();
     const config = std.io.tty.detectConfig(stderr);
 
+    // Highlight warnings and errors
     switch (message_level) {
         .warn => config.setColor(writer, .bright_yellow) catch {},
         .err => {
@@ -24,6 +25,7 @@ fn logFn(
 
     std.log.defaultLog(message_level, scope, format, args);
 
+    // Reset colors after logging
     config.setColor(writer, .reset) catch {};
 }
 
@@ -47,9 +49,9 @@ pub fn main() !void {
     const args = try std.process.argsAlloc(alloc);
     defer std.process.argsFree(alloc, args);
 
-    if (args.len < 5) {
+    if (args.len != 7) {
         std.log.err(
-            \\Not enough arguments, expected 4 got {d}
+            \\invalid arguments, expected 6 got {d}
             \\  Expected order:
             \\    path to nixpkgs
             \\    The path to read the config from
@@ -61,15 +63,15 @@ pub fn main() !void {
         ,
             .{args.len - 1},
         );
-        return error.NotEnoughArguments;
+        std.process.exit(1);
     }
 
     const nixpkgs_path = args[1];
     const in_path = args[2];
     const out_path = args[3];
     const input_blob = args[4];
-    const extra_subs: []const u8 = if (args.len > 5) args[5] else "-";
-    const extra_config: []const u8 = if (args.len > 6) args[6] else "-";
+    const extra_subs: []const u8 = args[5];
+    const extra_config: []const u8 = args[6];
 
     assert(std.fs.path.isAbsolute(nixpkgs_path));
     assert(std.fs.path.isAbsolute(in_path));
@@ -84,8 +86,7 @@ pub fn main() !void {
     try patchConfig(alloc, subs, in_path, out_path, extra_config);
 }
 
-// TEST: Make an end to end test here!!
-pub fn patchConfig(
+fn patchConfig(
     alloc: Allocator,
     subs: []const Substitution,
     in_path: []const u8,
@@ -154,7 +155,7 @@ fn getPlugins(alloc: Allocator, nixpkgs_path: []const u8, input_blob: []const u8
 
     const files: []const File = &.{ vim_plugins_file, lua_plugins_file };
 
-    return try input_parser.parseInput(alloc, input_blob, files);
+    return try nixpkgs_parser.parseFiles(alloc, input_blob, files);
 }
 
 fn getSubs(alloc: Allocator, plugins: []const Plugin, extra_subs: []const u8) ![]const Substitution {
