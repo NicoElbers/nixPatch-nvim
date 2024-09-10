@@ -37,35 +37,6 @@ Somewhere along the line, I had some problems with nixCats (completely my own fa
 
 ## Quick setup
 
-Your plugin dependencies must be wrapped by `{}`.
-Change:
-
-```lua
-return {
-  "plugin1",
-  dependencies = {
-    "plugin2",
-    "plugin3",
-  },
-}
-```
-
-into:
-
-```lua
-return {
-  "plugin1",
-  dependencies = {
-    {
-      "plugin2",
-    },
-    {
-      "plugin3",
-    },
-  },
-}
-```
-
 Change loading lazy to:
 
 ```lua
@@ -120,50 +91,10 @@ For more detailed information, look at the section below.
 
 ### Setting up your config
 
-`nv` does its best to work with existing lazy.nvim configurations, but it's not perfect. The setup you need to however, is minimal. There are 3 main limitations as of now:
+`nv` does its best to work with existing lazy.nvim configurations, but it's not perfect. The setup you need to however, is minimal. There are 2 main limitations as of now:
 
-1. Plugin dependencies must be wrapped in brackets `{}` to be correctly parsed.
-2. Plugins that install files, like mason, don't play nice with nix.
-3. lazy.nvim isn't loaded by lazy.nvim, so we need a special way to be able to load it correctly.
-
-#### Setting up dependencies
-
-Setting up dependencies is mainly an annoyance and planned to not be needed in the future. The easiest way to do it is to go through every file where you install plugins and see if they have dependencies. If they do, and they are not already wrapped in brackets, highlight them `Shift-v`, then do the following search and replace: `:'<,'>s/\v(\s*)(.*)/\1{\r\1\t\2\r\1},`. This might look very intimidating, but it's not that difficult. Here's what it does:
-
-- `:'<,'>` This is what appears by default when you enter a command while having some text selected. It will perform your command on that range
-- `s/` This starts a search (and replace)
-- `\v` This enables "very magic" mode, which means we have to escape less characters
-- `(\s*)` This will select 0 or more whitespace characters, and capture them in group 1
-- `(.*)` This will select 0 or more characters, until the end of the line and capture them in group 2
-- `/` "we want to replace with everything after this"
-- `\1{\r` First put capture group 1 here (all the whitespace), then a `{` and then a newline `\r`
-- `\1\t\2\r` Put the first capture group here, then a tab, then the second capture group, and finally a newline
-- `\1},` Put whitespace, `}` and finally a comma
-
-Ok I admit, this is a little complicated, but it's things like this that make Neovim fun! If you want more information about all this, I highly recommend [this website](https://learnvim.irian.to/basics/search_and_substitute) or look through the vim docs using `:help`!
-
-**TLDR**; turn this:
-
-```lua
-dependencies = {
-  "Some/plugin",
-  "other/plugin",
-},
-```
-
-into this:
-
-```lua
-dependencies = {
-  {
-    "Some/plugin",
-  },
-  {
-    "other/plugin",
-  },
-},
-
-```
+1. Plugins that install files, like mason, don't play nice with nix.
+2. lazy.nvim isn't loaded by lazy.nvim, so we need a special way to be able to load it correctly.
 
 #### Utilities
 
@@ -346,7 +277,7 @@ Last but not least, setup should be easy. Part of the reason I stared this proje
 
 ## Roadmap
 
-- [ ] Make the Lua parser smarter such that one line dependency plugin url's no longer need to be wrapped
+- [x] Make the Lua parser smarter such that one line dependency plugin url's no longer need to be wrapped
 - [ ] Provide a way to iterate over your configuration quickly
   - This would mean that the underlying config patcher be exposed as a program for you to run, updating your settings but not adding new plugins
 - [ ] Add support for different package managers
