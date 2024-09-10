@@ -18,6 +18,7 @@ stdenv.mkDerivation {
 
   nativeBuildInputs = [ makeWrapper ];
 
+  # Link all the providers into one directory
   postBuild = 
       ""
       + lib.optionalString withPython3 ''

@@ -1,4 +1,5 @@
-# Effectively copied from https://github.com/BirdeeHub/nixCats-nvim/blob/77f400d39ad26023f818de365a078d6d532a2c56/nix/builder/vim-pack-dir.nix
+# Effectively copied and minimized from
+# https://github.com/BirdeeHub/nixCats-nvim/blob/77f400d39ad26023f818de365a078d6d532a2c56/nix/builder/vim-pack-dir.nix
 {
   lib
   , stdenv
@@ -28,6 +29,11 @@ let
 
   mkEntryFromDrv = drv: { name = "${lib.getName drv}"; value = drv; };
 
+# TODO: Go through all this and simplify
+# - I know that I can remove the start, opt things, and change it to just a list
+#   of plugins. I only use one regardless.
+# - I might be able to put any of our plugins in the rtp, that way I think a 
+#   lazy warning will go away
 packDir = packages:
   let
   packageLinks = packageName: {start ? [], opt ? []}:
@@ -82,13 +88,12 @@ packDir = packages:
       ++ lib.optional (allPython3Dependencies python3.pkgs != []) python3link;
   in
   buildEnv {
+    # TODO: Use a name variable here
     name = "nv-rtp";
     paths = (lib.flatten (lib.mapAttrsToList packageLinks packages));
     # gather all propagated build inputs from packDir
     postBuild = ''
-      echo "###################"
-      echo "packDir: $out"
-      echo "###################"
+      echo "rtp: $out"
 
       mkdir $out/nix-support
       for i in $(find -L $out -name propagated-build-inputs ); do

@@ -5,10 +5,13 @@ patcher:
   , system
   , dependencyOverlays
 }:
+# TODO: When we name change, probably best to make name a required argument
+# and maybe give an option to do name-override
 { configuration, specialArgs ? null, extra_pkg_config ? {}, name ? "nv" }:
 let
   utils = import ../utils;
 
+  # Create packages with your specified overlays
   pkgs = import nixpkgs ({
     inherit system;
     overlays = if builtins.isList dependencyOverlays
@@ -19,6 +22,7 @@ let
   } // { config = extra_pkg_config; });
   lib = pkgs.lib;
 
+  # Extract your configuration
   rawconfiguration = configuration { inherit pkgs specialArgs; };
 
   finalConfiguration = {
@@ -56,6 +60,10 @@ let
   // rawconfiguration.settings
   # TODO: Make wrapRc optional by adding an option to put
   # config in xdg.config
+  #
+  # Maybe it's a better idea to not have wrapRc at all, and just give an option
+  # to do the quick patch thing automatically putting your config in /tmp. 
+  # Since nv patches your config, it should _always_ be wrapped.
   // { wrapRc = true; };
 
   inherit (finalConfiguration) 
@@ -138,11 +146,13 @@ let
     ]
     ++
     (
+     # TODO: Do more type safety like this, type safety my beloved
      if builtins.isList extraWrapperArgs then extraWrapperArgs 
      else if builtins.isString then [extraWrapperArgs]
      else throw "extraWrapperArgs should be a string or list of strings"
     );
 
+  # Get the patched lua config
   customSubsPatched = 
     customSubs 
     ++ lib.optionals patchSubs ((pkgs.callPackage ./../../subPatches.nix {}) plugins);
@@ -164,9 +174,8 @@ let
   manifestRc = ''
       set nocompatible
   '';
-
-
 in
+# Do the now actually put everything together
 (pkgs.callPackage ./neovimWrapper.nix {}) neovim {
     inherit luaConfig;
     inherit wrapRc wrapperArgs;

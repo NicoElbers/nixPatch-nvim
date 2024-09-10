@@ -5,7 +5,6 @@
   , writeText
   , callPackage
   , lndir
-  , coreutils
 }:
 neovim-unwrapped:
 let
@@ -23,12 +22,6 @@ let
   stdenv.mkDerivation (finalAttrs: 
     let
       rtp = (callPackage ./rtpBuilder.nix {}) neovim-unwrapped packpathDirs;
-
-      shellCode = builtins.concatStringsSep "\n" [/*bash*/''
-        NVIM_WRAPPER_PATH_NIX="$(${coreutils}/bin/readlink -f "$0")"
-        export NVIM_WRAPPER_PATH_NIX
-      ''];
-      preWrapperShellFile = writeText "preNVWrapperShellCode" shellCode;
 
       generatedWrapperArgs = [ "--set" "VIMRUNTIME" "${rtp}" ];
 
@@ -55,7 +48,7 @@ let
               --replace-fail 'Exec=nvim %F' 'Exec=${name} %F'\
               --replace-fail 'Icon=nvim' 'Icon=${neovim-unwrapped}/share/icons/hicolor/128x128/apps/nvim.png'
 
-        echo "replaced desktop"
+        echo "created desktop file"
       ''
       + lib.optionalString (manifestRc != null) (let
         manifestWrapperArgs = 
@@ -79,6 +72,7 @@ let
         # for an example of this behavior.
         export HOME="$(mktemp -d)"
 
+
         # Launch neovim with a vimrc file containing only the generated plugin
         # code. Pass various flags to disable temp file generation
         # (swap/viminfo) and redirect errors to stderr.
@@ -94,32 +88,26 @@ let
           exit 1
         fi
         rm "${placeholder "out"}/bin/nvim-wrapper"
+
+        # Not sure why this touch is here, but I guess it's a good failsafe
+        # in case the previous code doesn't work for whatever reason
+        touch $out/rplugin.vim
       '')
       + /* bash */ ''
-        # rm $out/bin/nvim
-        touch $out/rplugin.vim
 
         echo "Looking for lua dependencies..."
+
+        # Ignore failures here, since older nix versions didn't have these
+        # functions
         source ${lua}/nix-support/utils.sh || true
         _addToLuaPath "${rtp}" || true
         
-        echo "#################################################"
         echo "LUA_PATH: $LUA_PATH"
         echo "LUA_CPATH: $LUA_CPATH"
-        echo "#################################################"
 
         makeWrapper ${lib.escapeShellArgs finalMakeWrapperArgs} ${wrapperArgsStr} \
           --prefix LUA_PATH ';' "$LUA_PATH" \
           --prefix LUA_CPATH ';' "$LUA_CPATH"
-
-        # no clue what this is for, but at this point fuck it
-        export BASHCACHE=$(mktemp)
-        head -1 ${placeholder "out"}/bin/${name} > $BASHCACHE
-        # Add code
-        cat ${preWrapperShellFile} >> $BASHCACHE
-        tail -n +2 ${placeholder "out"}/bin/${name} >> $BASHCACHE
-        cat $BASHCACHE > ${placeholder "out"}/bin/${name}
-        rm $BASHCACHE
       ''
       # Finally, symlink some aliases
       + lib.optionalString (aliases != null)
