@@ -1,7 +1,7 @@
-pub fn parseInput(alloc: Allocator, input_blob: []const u8, input_files: []const File) ![]const Plugin {
+pub fn parseFiles(alloc: Allocator, input_blob: []const u8, nixpkgs_files: []const File) ![]const Plugin {
     const user_plugins = try parseBlob(alloc, input_blob);
 
-    for (input_files) |file| {
+    for (nixpkgs_files) |file| {
         const file_buf = try utils.mmapFile(file, .{});
         defer utils.unMmapFile(file_buf);
 

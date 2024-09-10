@@ -1,5 +1,5 @@
 pub const utils = @import("utils.zig");
-pub const input_parser = @import("InputParser.zig");
+pub const nixpkgs_parser = @import("nixpkgs_parser.zig");
 pub const LuaIter = @import("LuaIter.zig");
 pub const LuaParser = @import("LuaParser.zig");
 pub const Plugin = types.Plugin;

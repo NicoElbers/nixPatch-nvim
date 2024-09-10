@@ -10,10 +10,10 @@ pub fn mmapFile(file: File, config: MmapConfig) ![]align(mem.page_size) u8 {
     assert(md.size() <= std.math.maxInt(usize));
 
     var prot: u32 = 0;
-    if (config.read) prot |= std.posix.PROT.READ;
-    if (config.write) prot |= std.posix.PROT.WRITE;
+    if (config.read) prot |= posix.PROT.READ;
+    if (config.write) prot |= posix.PROT.WRITE;
 
-    return try std.posix.mmap(
+    return try posix.mmap(
         null,
         @intCast(md.size()),
         prot,
@@ -26,7 +26,7 @@ pub fn mmapFile(file: File, config: MmapConfig) ![]align(mem.page_size) u8 {
 pub fn unMmapFile(mapped_file: []align(mem.page_size) u8) void {
     assert(@import("builtin").os.tag != .windows);
 
-    std.posix.munmap(mapped_file);
+    posix.munmap(mapped_file);
 }
 
 pub fn trim(input: []const u8) []const u8 {
@@ -44,7 +44,7 @@ pub fn eql(expected: []const u8, input: []const u8) bool {
 const std = @import("std");
 const fs = std.fs;
 const mem = std.mem;
+const posix = std.posix;
 const assert = std.debug.assert;
 
 const File = fs.File;
-const Allocator = mem.Allocator;
