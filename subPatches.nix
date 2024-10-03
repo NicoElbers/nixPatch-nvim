@@ -4,7 +4,7 @@ let
   utils = pkgs.callPackage ./patchUtils.nix{};
 
   # For more information about the different types of subsitutions, go here:
-  # https://github.com/NicoElbers/nv/blob/main/patchUtils.nix
+  # https://github.com/NicoElbers/nixPatch-nvim/blob/main/patchUtils.nix
   inherit (utils) 
     urlSub githubUrlSub 
     stringSub keyedStringSub 
