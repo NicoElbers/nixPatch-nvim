@@ -17,7 +17,7 @@ let
     , extraName ? ""
     , wrapRc ? true
     , wrapperArgs ? ""
-    , name ? "nv"
+    , name ? "nixPatch"
   }:
   stdenv.mkDerivation (finalAttrs: 
     let

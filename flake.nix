@@ -20,7 +20,7 @@
 
   outputs = { nixpkgs, zig, zls, ... }@inputs: 
   let
-    name = "nv";
+    name = "nvimp";
 
     utils = (import ./nix/utils);
     forEachSystem = utils.eachSystem nixpkgs.lib.platforms.all;
@@ -218,7 +218,7 @@
             # If you would want to replace the string "replace_me" with "replaced" 
             # you would have to do:
             # ++ (patchUtils.stringSub "replace_me" "replaced")
-            # For more examples look here: https://github.com/NicoElbers/nv/blob/main/subPatches.nix
+            # For more examples look here: https://github.com/NicoElbers/nixPatch-nvim/blob/main/subPatches.nix
 
       settings = {
         withNodeJs = true;
@@ -253,8 +253,8 @@
     };
   in {
     packages = rec {
-      default = nv;
-      nv = configWrapper { inherit configuration extra_pkg_config name; };
+      default = nixPatch;
+      nixPatch = configWrapper { inherit configuration extra_pkg_config name; };
     };
 
     inherit configWrapper;
