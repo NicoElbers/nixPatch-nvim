@@ -49,7 +49,7 @@
         # allow_unfree = true;
     };
 
-    configuration = { pkgs, ... }: 
+    configuration = { pkgs, system, ... }: 
     let
       patchUtils = nixPatch.patchUtils.${pkgs.system};
     in 

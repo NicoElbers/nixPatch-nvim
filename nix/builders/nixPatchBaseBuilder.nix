@@ -23,7 +23,7 @@ let
   lib = pkgs.lib;
 
   # Extract your configuration
-  rawconfiguration = configuration { inherit pkgs specialArgs; };
+  rawconfiguration = configuration { inherit pkgs system specialArgs; };
 
   finalConfiguration = {
     # luaPath cannot be merged
