@@ -95,6 +95,12 @@ packDir = packages:
     postBuild = ''
       echo "rtp: $out"
 
+      mkdir -p $out/runtime
+      find $out -mindepth 1 -maxdepth 1 \
+        ! -name runtime \
+        ! -name nix-support \
+        -exec mv {} $out/runtime/ \;
+
       mkdir $out/nix-support
       for i in $(find -L $out -name propagated-build-inputs ); do
         cat "$i" >> $out/nix-support/propagated-build-inputs

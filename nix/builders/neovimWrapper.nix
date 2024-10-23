@@ -23,7 +23,7 @@ let
     let
       rtp = (callPackage ./rtpBuilder.nix {}) neovim-unwrapped packpathDirs;
 
-      generatedWrapperArgs = [ "--set" "VIMRUNTIME" "${rtp}" ];
+      generatedWrapperArgs = [ "--set" "VIMRUNTIME" "${rtp}/runtime" ];
 
       finalMakeWrapperArgs =
         [ "${neovim-unwrapped}/bin/nvim" "${placeholder "out"}/bin/${name}"]
