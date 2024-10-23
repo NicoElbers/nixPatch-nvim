@@ -4,11 +4,6 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable-small";
 
-    zig = {
-      url = "github:mitchellh/zig-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     zls = {
       # Last commit on 0.13.0
       url = "github:zigtools/zls?rev=a26718049a8657d4da04c331aeced1697bc7652b";
@@ -18,7 +13,7 @@
     neovim-nightly-overlay.url = "github:nix-community/neovim-nightly-overlay";
   };
 
-  outputs = { nixpkgs, zig, zls, ... }@inputs: 
+  outputs = { nixpkgs, zls, ... }@inputs: 
   let
     name = "nvimp";
 
@@ -270,7 +265,7 @@
 
     devShells.default = with pkgs; mkShell {
       packages = [
-        zig.packages.${system}."0.13.0"
+        zig
         zls.packages.${system}.zls
       ];
     };
