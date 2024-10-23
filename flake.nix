@@ -160,6 +160,8 @@
         fd
         gcc
         nix-doc
+        luarocks-nix
+        lua5_1
 
         # lsps
         lua-language-server
