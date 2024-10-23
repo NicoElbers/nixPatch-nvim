@@ -2,7 +2,7 @@
   description = "Super thin wrapper around neovim";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable-small";
 
     zig = {
       url = "github:mitchellh/zig-overlay";
