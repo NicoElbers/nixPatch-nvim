@@ -262,6 +262,12 @@
     inherit configWrapper;
     patchUtils = pkgs.callPackage ./patchUtils.nix {};
 
+    # Expose the nightly version from the which matches with the version
+    # used in the runtime path created by nixPatch. This can help prevent linking 
+    # issues with for example treesitter:
+    # https://github.com/nvim-treesitter/nvim-treesitter/issues/7275#issuecomment-2433541628
+    neovim-nightly = inputs.neovim-nightly-overlay.packages.${pkgs.system}.neovim;
+
     devShells.default = with pkgs; mkShell {
       packages = [
         zig.packages.${system}."0.13.0"
