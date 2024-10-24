@@ -2,7 +2,7 @@
   description = "Super thin wrapper around neovim";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable-small";
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
 
     zls = {
       # Last commit on 0.13.0
