@@ -3,7 +3,7 @@ stdenvNoCC.mkDerivation {
   pname = "config-patcher";
   version = "0";
 
-  src = lib.sources.sourceByRegex (lib.cleanSource ../../.) ["build.zig" ".*patcher.*"];
+  src = lib.sources.sourceByRegex (lib.cleanSource ../../.) [".*patcher.*"];
 
   nativeBuildInputs = [ zig ];
 
@@ -14,26 +14,41 @@ stdenvNoCC.mkDerivation {
   buildPhase = ''
     mkdir -p .cache
 
-    # Not using the build script is significantly faster, but the convenience
-    # of not having to change the command every time I would add/ remove a module
-    # or test, is fantastic
-    zig build --cache-dir $(pwd)/.zig-cache --global-cache-dir $(pwd)/.cache \
-      -Dcpu=baseline \
-      --verbose \
-      --prefix $out 
+    # Explicitly a debug build, since it cuts total build time by abt 10 seconds
+    zig build-exe \
+        -ODebug \
+        --dep lib \
+        -Mroot=$(pwd)/patcher/src/main.zig \
+        -ODebug \
+        -Mlib=$(pwd)/patcher/src/lib/root.zig \
+        --cache-dir $(pwd)/.zig-cache \
+        --global-cache-dir $(pwd)/.cache \
+        --name config-patcher
+
+    mkdir -p $out/bin
+    cp config-patcher $out/bin
   '';
 
   checkPhase = ''
-    echo "Running zig tests"
+    zig test \
+        -ODebug \
+        --dep lib \
+        -Mroot=$(pwd)/patcher/test/root.zig \
+        -ODebug \
+        -Mlib=$(pwd)/patcher/src/lib/root.zig \
+        --cache-dir $(pwd)/.zig-cache \
+        --global-cache-dir $(pwd)/.cache \
+        --name test
 
-    # Not using the build script is significantly faster, but the convenience
-    # of not having to change the command every time I would add/ remove a module
-    # or test, is fantastic
-    zig build test --cache-dir $(pwd)/.zig-cache --global-cache-dir $(pwd)/.cache \
-      --verbose \
-      -Dcpu=baseline 
-
-    echo "Done running zig tests"
+    zig test \
+        -ODebug \
+        --dep lib \
+        -Mroot=$(pwd)/patcher/src/lib/root.zig \
+        -ODebug \
+        -Mlib=$(pwd)/patcher/src/lib/root.zig \
+        --cache-dir $(pwd)/.zig-cache \
+        --global-cache-dir $(pwd)/.cache \
+        --name test
   '';
 
   meta.mainProgram = "config-patcher";
