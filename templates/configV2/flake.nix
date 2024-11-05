@@ -4,9 +4,18 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
+    # In case you want nightly
+    # neovim-nightly-overlay = {
+    #   url = "github:nix-community/neovim-nightly-overlay";
+    #   inputs.nixpkgs.follows = "nixpkgs";
+    # };
+
     nixPatch = {
       url = "github:NicoElbers/nixPatch-nvim";
       inputs.nixpkgs.follows = "nixpkgs";
+
+      # We do this so that we ensure neovim nightly actually updates
+      # inputs.neovim-nightly-overlay.follows = "neovim-nightly-overlay";
     };
   };
 
@@ -126,6 +135,11 @@
 
         # Any other neovim package you would like to use, for example nightly
         neovim-unwrapped = null;
+
+        # When using nightly, it's best to use the version nixPatch exposes, 
+        # this prevents potential linking errors if nixPatch isn't updated in a 
+        # while
+        # neovim-unwrapped = inputs.nixPatch.neovim-nightly.${system};
 
         # Whether to add custom subsitution made in the original repo, makes for
         # a better out of the box experience 
