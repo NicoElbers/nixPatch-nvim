@@ -1,4 +1,4 @@
-{ lib, stdenv, makeWrapper, nodePackages }:
+{ lib, stdenv, makeWrapper, neovim-node-client }:
 {
   name
   , withNodeJs
@@ -28,7 +28,7 @@ stdenv.mkDerivation {
         ln -s ${rubyEnv}/bin/neovim-ruby-host $out/bin/${name}-ruby
       ''
       + lib.optionalString withNodeJs ''
-        ln -s ${nodePackages.neovim}/bin/neovim-node-host $out/bin/${name}-node
+        ln -s ${neovim-node-client}/bin/neovim-node-host $out/bin/${name}-node
       ''
       + lib.optionalString withPerl ''
         ln -s ${perlEnv}/bin/perl $out/bin/${name}-perl
