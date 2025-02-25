@@ -88,7 +88,7 @@ end)
 load_lazy()
 
 -- Disable resetting the RTP, so that you actually see our new one
-require("lazy").setup("plugins", { performance = { rtp = { reset = set(false, true) } } })
+require("lazy").setup("plugins", { performance = { rtp = { reset = set(true, false) } } })
 ```
 
 Disable plugins like `Mason` so they don't download things on nix.
@@ -214,7 +214,7 @@ the
 [`subPatches.nix`](https://github.com/NicoElbers/nixPatch-nvim/blob/main/subPatches.nix)
 file. You can also add your own, as you'll see a bit later.
 
-Also note how we have to add `{ performance = { rtp = { reset = false } } }` to
+Also note how we have to add `{ performance = { rtp = { reset = set(true, false) } } }` to
 our lazygit settings. This is because otherwise lazy will try to force our
 runtime path (where your configuration lives) to be `~/.config/{name}`, which
 we want to avoid.
@@ -259,7 +259,7 @@ end)
 load_lazy()
 
 -- Disable resetting the RTP, so that you actually see our new one
-require("lazy").setup("plugins", { performance = { rtp = { reset = false } } })
+require("lazy").setup("plugins", { performance = { rtp = { reset = set(true, false) } } })
 ```
 
 #### Dealing with mason and the like
