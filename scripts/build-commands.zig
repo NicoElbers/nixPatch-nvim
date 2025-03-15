@@ -11,44 +11,42 @@ pub fn main() !void {
 
     // Zig build --verbose {args[1..]}
     //  1    2      3       args.len -1
-    var build_args = try ArrayList([]const u8).initCapacity(alloc, 3 + args.len - 1);
-    defer build_args.deinit();
+    const build_args = try alloc.alloc([]const u8, 3 + args.len - 1);
+    defer alloc.free(build_args);
 
-    build_args.appendSliceAssumeCapacity(&.{
+    build_args[0..3].* = .{
         "zig",
         "build",
         "--verbose",
-    });
+    };
 
-    build_args.appendSliceAssumeCapacity(args[1..]);
+    @memcpy(build_args[3..], args[1..]);
 
-    assert(build_args.items.len == build_args.capacity);
-
-    std.log.info("Running command:\ninfo: {s} \\", .{build_args.items[0]});
-    for (build_args.items[1..]) |item| {
+    std.log.info("Running command:\ninfo: {s} \\", .{build_args[0]});
+    for (build_args[1..]) |item| {
         std.log.info("\t{s} \\", .{item});
     }
 
-    var stdout = ArrayList(u8).init(alloc);
-    defer stdout.deinit();
+    var stdout: ArrayListUnmanaged(u8) = .empty;
+    defer stdout.deinit(alloc);
 
-    var stderr = ArrayList(u8).init(alloc);
-    defer stderr.deinit();
+    var stderr: ArrayListUnmanaged(u8) = .empty;
+    defer stderr.deinit(alloc);
 
     const term = blk: {
-        var build_process = Child.init(build_args.items, alloc);
+        var build_process = Child.init(build_args, alloc);
         build_process.stdin_behavior = .Pipe;
         build_process.stdout_behavior = .Pipe;
         build_process.stderr_behavior = .Pipe;
 
         try build_process.spawn();
 
-        try build_process.collectOutput(&stdout, &stderr, std.math.maxInt(isize));
+        try build_process.collectOutput(alloc, &stdout, &stderr, std.math.maxInt(isize));
 
         break :blk try build_process.wait();
     };
 
-    if (term.Exited != 0) {
+    if (term != .Exited or term.Exited != 0) {
         std.log.err(
             \\Build process exited with exit code {d}
             \\stderr: 
@@ -115,4 +113,4 @@ const assert = std.debug.assert;
 
 const Child = process.Child;
 const Allocator = std.mem.Allocator;
-const ArrayList = std.ArrayList;
+const ArrayListUnmanaged = std.ArrayListUnmanaged;

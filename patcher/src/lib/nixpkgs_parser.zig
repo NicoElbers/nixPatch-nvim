@@ -26,7 +26,7 @@ pub fn parseFiles(alloc: Allocator, input_blob: []const u8, nixpkgs_files: []con
             const haystack_plugin = user_plugins[haystack_idx];
 
             if (std.mem.eql(u8, needle_plugin.pname, haystack_plugin.pname)) {
-                @setCold(true);
+                @branchHint(.unlikely);
 
                 std.log.err(
                     "Found plugin '{s}' twice, cannot patch unambigiously. exiting",

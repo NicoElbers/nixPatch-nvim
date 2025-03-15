@@ -3,7 +3,7 @@ pub const MmapConfig = struct {
     write: bool = false,
 };
 
-pub fn mmapFile(file: File, config: MmapConfig) ![]align(mem.page_size) u8 {
+pub fn mmapFile(file: File, config: MmapConfig) ![]align(page_size_min) u8 {
     assert(@import("builtin").os.tag != .windows);
 
     const md = try file.metadata();
@@ -23,7 +23,7 @@ pub fn mmapFile(file: File, config: MmapConfig) ![]align(mem.page_size) u8 {
     );
 }
 
-pub fn unMmapFile(mapped_file: []align(mem.page_size) u8) void {
+pub fn unMmapFile(mapped_file: []align(page_size_min) u8) void {
     assert(@import("builtin").os.tag != .windows);
 
     posix.munmap(mapped_file);
@@ -45,6 +45,8 @@ const std = @import("std");
 const fs = std.fs;
 const mem = std.mem;
 const posix = std.posix;
+
 const assert = std.debug.assert;
+const page_size_min = std.heap.page_size_min;
 
 const File = fs.File;
