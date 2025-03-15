@@ -1,11 +1,11 @@
-{ lib, stdenvNoCC, zig }:
+{ lib, stdenvNoCC, zig_0_13 }:
 stdenvNoCC.mkDerivation {
   pname = "config-patcher";
   version = "0";
 
   src = lib.sources.sourceByRegex (lib.cleanSource ../../.) [".*patcher.*"];
 
-  nativeBuildInputs = [ zig ];
+  nativeBuildInputs = [ zig_0_13 ];
 
   dontConfigure = true;
   dontInstall = true;
