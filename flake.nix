@@ -161,7 +161,7 @@
         nodePackages_latest.typescript-language-server
         emmet-language-server
         tailwindcss-language-server
-        llvmPackages_18.clang-unwrapped
+        llvmPackages.clang-unwrapped
         nil
         marksman
         pyright

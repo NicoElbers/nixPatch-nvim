@@ -45,8 +45,9 @@ let
         substitute ${neovim-unwrapped}/share/applications/nvim.desktop $out/share/applications/${name}.desktop \
               --replace-fail 'Name=Neovim' 'Name=${name}'\
               --replace-fail 'TryExec=nvim' 'TryExec=${name}'\
-              --replace-fail 'Exec=nvim %F' 'Exec=${name} %F'\
-              --replace-fail 'Icon=nvim' 'Icon=${neovim-unwrapped}/share/icons/hicolor/128x128/apps/nvim.png'
+              --replace-fail 'Icon=nvim' 'Icon=${neovim-unwrapped}/share/icons/hicolor/128x128/apps/nvim.png' 
+
+      sed -i '/^Exec=nvim/c\Exec=${name} "%F"' $out/share/applications/${name}.desktop
 
         echo "created desktop file"
       ''
