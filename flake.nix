@@ -8,7 +8,6 @@
       url = "github:nix-community/neovim-nightly-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
   };
 
   outputs = { nixpkgs, ... }@inputs: 
@@ -263,8 +262,8 @@
 
     devShells.default = with pkgs; mkShell {
       packages = [
-        zig
-        zls
+        zig_0_14
+        zls_0_14
       ];
     };
   }) // {
