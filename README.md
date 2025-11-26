@@ -1,3 +1,6 @@
+# Moved to codeberg
+This repository has been moved to [codeberg](https://codeberg.org/NicoElbers/nixPatch-nvim)
+
 # nixPatch: keep your lazy.nvim config in Lua
 
 <!--toc:start-->
